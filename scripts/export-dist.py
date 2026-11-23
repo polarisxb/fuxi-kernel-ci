@@ -114,6 +114,10 @@ def export(workspace, dist, reports):
     require(len(source_sha) == 40 and all(char in "0123456789abcdef" for char in source_sha),
             "A complete CI source SHA is required")
     verify_ci_source(workspace, release_root, source_sha)
+    source_identity = {
+        name: sha256(release_root / "source-diffs" / name)
+        for name in ("common.diff", "SukiSU.diff", "integrated-source-manifest.json")
+    }
     dist.mkdir(parents=True)
     try:
         shutil.copy2(kernel, dist / KERNEL_ZIP)
@@ -125,6 +129,7 @@ def export(workspace, dist, reports):
             "component": "kernel",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "source_sha": source_sha,
+            "source_identity": source_identity,
             "source_ref": os.environ.get("CI_SOURCE_REF", os.environ.get("GITHUB_REF", "local")),
             "repository": os.environ.get("GITHUB_REPOSITORY", "polarisxb/fuxi-kernel-ci"),
             "run_id": os.environ.get("GITHUB_RUN_ID", "local"),

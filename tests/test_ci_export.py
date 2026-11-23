@@ -37,6 +37,11 @@ class ExportTests(unittest.TestCase):
         (self.release / "public-certificates").mkdir()
         (self.release / "public-certificates/signing_key.x509").write_bytes(b"public fixture")
         (self.release / "Image").write_bytes(b"test Image")
+        diffs = self.release / "source-diffs"
+        diffs.mkdir()
+        (diffs / "common.diff").write_bytes(b"common patch\n")
+        (diffs / "SukiSU.diff").write_bytes(b"driver patch\n")
+        (diffs / "integrated-source-manifest.json").write_bytes(b"{}\n")
         (self.release / "kernel.release").write_text("test-r2\n")
         with zipfile.ZipFile(self.release / E.KERNEL_ZIP, "w") as archive:
             archive.writestr("Image", b"test Image")
@@ -100,6 +105,20 @@ class ExportTests(unittest.TestCase):
     def test_failed_report_rejected_before_output(self):
         (self.reports / "post-regressions.json").write_text(json.dumps({"passed": False}))
         with self.assertRaisesRegex(ValueError, "post_regressions"):
+            self.export()
+        self.assertFalse((self.root / "dist").exists())
+
+    def test_source_identity_matches_delivered_bytes(self):
+        self.export()
+        metadata = json.loads((self.root / "dist/kernel-build-info.json").read_bytes())
+        self.assertEqual(metadata["source_identity"], {
+            name: digest(self.release / "source-diffs" / name)
+            for name in ("common.diff", "SukiSU.diff", "integrated-source-manifest.json")
+        })
+
+    def test_missing_source_manifest_prevents_export(self):
+        (self.release / "source-diffs/integrated-source-manifest.json").unlink()
+        with self.assertRaises(FileNotFoundError):
             self.export()
         self.assertFalse((self.root / "dist").exists())
 

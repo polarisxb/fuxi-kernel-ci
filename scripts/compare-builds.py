@@ -1,4 +1,4 @@
-"""Compare two unpacked phase 1b Actions runs, each containing kernel/ and native/."""
+"""Compare phase 1b outputs from gh run download, or unpacked kernel/ and native/ directories."""
 import argparse
 import hashlib
 import json
@@ -27,9 +27,14 @@ def snapshot(root, expected_commit=None):
     snapshot = {}
     components = []
     for folder, fields in (("kernel", KERNEL_FIELDS), ("native", NATIVE_FIELDS)):
-        directory = root / folder
+        prefix = f"fuxi-{folder}-"
+        directories = [p for p in root.iterdir() if p.is_dir() and
+                       (p.name == folder or re.fullmatch(prefix + r"[0-9a-f]{40}", p.name))]
+        require(len(directories) == 1, f"Expected exactly one {folder} directory in {root}, found {len(directories)}")
+        directory, = directories
         path = directory / (folder + "-build-info.json")
         info = json.loads(path.read_bytes())
+        require(directory.name in (folder, prefix + info["source_sha"]), f"Artifact directory/commit mismatch: {path}")
         components.append((info["repository"], info["source_sha"], info["run_id"]))
         require(info["component"] == {"kernel": "kernel", "native": "ksud"}[folder], f"Wrong component in {path}")
         for key in fields:

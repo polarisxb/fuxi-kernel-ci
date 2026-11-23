@@ -72,6 +72,18 @@ class ComparisonTests(unittest.TestCase):
             "source/common.diff", "kernel/image_sha256", "kernel/kernel.zip/Image",
             "kernel/module.zip/module.prop"})
 
+    def test_gh_download_directories_must_be_unambiguous_and_match_the_commit(self):
+        for root, sha in ((self.old, "a" * 40), (self.new, "b" * 40)):
+            for folder in ("kernel", "native"):
+                (root / folder).rename(root / f"fuxi-{folder}-{sha}")
+        result = self.compare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        (self.old / "kernel").mkdir()
+        self.assertEqual(self.compare().returncode, 2)
+        (self.old / "kernel").rmdir()
+        (self.old / ("fuxi-kernel-" + "a" * 40)).rename(self.old / ("fuxi-kernel-" + "c" * 40))
+        self.assertEqual(self.compare().returncode, 2)
+
     def test_incomplete_or_corrupt_artifacts_are_rejected(self):
         path = self.new / "kernel/kernel-build-info.json"
         original = path.read_bytes()

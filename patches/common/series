@@ -1,0 +1,8 @@
+# Applied in order to AOSP kernel/common after the official SUSFS kernel patch.
+# Upstream pins live in ci-layout.json; edit with scripts/source.py.
+0001-drivers-build-the-builtin-sukisu-driver.patch
+0002-susfs-use-the-driver-s-hook-declarations.patch
+0003-susfs-keep-the-caller-s-nameidata-for-open-redirects.patch
+0004-susfs-return-the-copied-length-from-redirected-readlink.patch
+0005-susfs-compare-the-target-inode-in-hash-lookups.patch
+0006-susfs-report-enabled-features-allocation-failure.patch

@@ -1,0 +1,8 @@
+# Applied in order to the SukiSU builtin driver archive named in ci-layout.json.
+# Edit with scripts/source.py.
+0001-keep-r2-vendoring-artifacts.patch
+0002-makefile-use-the-fixed-version-without-network-access.patch
+0003-kernel-umount-add-the-missing-feature-set-handler.patch
+0004-sucompat-match-the-susfs-hook-contract.patch
+0005-port-the-uname-and-cpu-spoof-ioctls-from-main.patch
+0006-cpu-spoof-only-spoof-the-reported-midr.patch

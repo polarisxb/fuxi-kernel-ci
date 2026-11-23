@@ -1,8 +1,9 @@
 # CI 工作区组装
 
-实施计划：固定上游 Git revision，验证公共输入包，再在新的 Linux 工作区覆盖仓库
-实际源码文件、恢复声明的链接并捕捉完整补丁。缓存只保存公共下载和 Git 对象，
-不保存构建输出或签名密钥。Windows 不需要检出完整内核树。
+固定上游 Git revision，验证公共输入包，再在新的 Linux 工作区按固定顺序组装：
+上游源码 → 官方 SUSFS 补丁 → `patches/` 补丁队列，恢复声明的链接并捕捉完整
+补丁。缓存只保存公共下载和 Git 对象，不保存构建输出或签名密钥。Windows 不需要
+检出完整内核树。
 
 ```sh
 python3 scripts/bootstrap.py --workspace "$RUNNER_TEMP/fuxi-project"
@@ -10,8 +11,8 @@ bash scripts/build-ksud.sh --workspace "$RUNNER_TEMP/fuxi-native" --dist dist/na
 ```
 
 `FUXI_INPUTS_CACHE` 或 `--inputs-cache` 控制公共缓存目录。工作区必须新建；脚本
-拒绝覆盖未知的非空目录。`--mirror-root` 只用于本机只读 Git 镜像的验收，CI
-默认从 manifest 中固定的公开 URL 获取。`--native-only` 仅准备固定 904c60d1
+拒绝覆盖未知的非空目录。`--mirror-root` 只用于本机只读 Git 镜像的验收（SUSFS 镜像放在
+`susfs4ksu/`），CI 默认从固定的公开 URL 获取。`--native-only` 仅准备固定 904c60d1
 Manager 原生程序源码和 NDK，保留真实 Git 历史及 40900 版本计数。
 
 原生构建要求开发仓库已有 commit 且工作区干净；`CI_SOURCE_SHA` 必须等于
@@ -35,9 +36,28 @@ tag 消失也拒绝。恢复记录随原生 metadata 发布，`build.rs` 的 Git
 输入包由 `reference/inputs.lock.json` 的 URL 与 SHA256 锁定。解包只允许
 `inputs/`、`downloads/`、`tools/`，拒绝路径穿越、特殊节点、符号链接与私钥；
 原厂模块的合法 tar hardlink 保留。源码中的必要链接只按
-`configs/source-links.json` 恢复，并验证目标仍在当前工作区内。
+`configs/source-links.json` 的 `kernel_links` 恢复，并验证目标仍在当前工作区内。
 
-根目录 `src/common` 是可编辑覆盖层；删除上游文件使用
-`configs/source-deletions.json`。`src/KernelSU` 是完整 builtin 驱动。
-补丁在组装后从实际 Git checkout 生成，包含新增和删除文件，避免源码已改却
-继续使用旧补丁。构建与真实 ELF/CRC/UAPI/签名验收由便携工作区脚本负责。
+## 组装顺序
+
+所有上游 pin 只写在 `ci-layout.json` 的 `upstreams`（`configs/manifest.locked.xml`
+中 kernel/common 与 NDK 的 revision 必须与它一致，否则组装立即停止）。
+
+1. `kernel/common`：manifest 固定的 AOSP checkout。
+2. SUSFS：按 `upstreams.susfs` 的 commit 从 GitLab 获取，复制 `kernel_files`
+   （`fs/susfs.c` 与两个头文件），再用 `git apply` 严格应用官方
+   `50_add_susfs_in_gki-android13-5.15.patch`。
+3. `.scmversion`：由 `kernel_release` 生成，并校验它以本树 Makefile 的版本开头、
+   包含 common commit 前 12 位。
+4. `patches/common/series`：本仓库对内核的改动，按顺序严格应用（无 fuzz）。
+5. `kernel/KernelSU`：解包 `upstreams.driver.archive`（输入包中锁定的 builtin
+   源码归档），再应用 `patches/driver/series`。
+6. 原生构建：固定 Manager checkout 上应用 `patches/manager/series`。
+
+任何补丁打不上都会以补丁文件名报错停止，不会带着旧改动继续构建。组装后仍从
+实际 Git checkout 生成 `common-final.diff` / `sukisu-final.diff`，与发布中的
+干净源码重放保持一致。构建与真实 ELF/CRC/UAPI/签名验收由便携工作区脚本负责。
+
+phase 1 迁移时，13 个补丁在原 r2 的上游基础上严格重放，与原 `src/` 覆盖层
+（内核 29 个文件、驱动 81 个文件、ksud 改动）逐字节一致；`.scmversion` 改为
+由锁文件生成，字节也相同。

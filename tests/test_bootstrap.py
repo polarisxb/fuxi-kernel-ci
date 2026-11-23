@@ -97,6 +97,31 @@ class BootstrapTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 B.restore_links(workspace, {"bad": value})
 
+    def test_driver_archive_must_hold_exactly_one_source_tree(self):
+        archive = self.archive([("SukiSU-Ultra-e291/kernel/Makefile", "file", "obj-y += ksu.o\n"),
+                                ("SukiSU-Ultra-e291/uapi", "symlink", "./kernel/include/uapi")])
+        destination = self.root / "kernel/KernelSU"
+        B.extract_single_tree(archive, destination)
+        self.assertEqual((destination / "kernel/Makefile").read_text(), "obj-y += ksu.o\n")
+        self.assertEqual(os.readlink(destination / "uapi"), "./kernel/include/uapi")
+        with self.assertRaisesRegex(ValueError, "already exists"):
+            B.extract_single_tree(archive, destination)
+        archive = self.archive([("first/a.c", "file", "a\n"), ("second/b.c", "file", "b\n")])
+        with self.assertRaisesRegex(ValueError, "Unexpected source archive layout"):
+            B.extract_single_tree(archive, self.root / "other")
+        self.assertFalse((self.root / "other").exists())
+
+    def test_kernel_assembly_stops_when_the_manifest_and_lock_disagree(self):
+        repo = self.root / "repo"
+        (repo / "configs").mkdir(parents=True)
+        (repo / "configs/manifest.locked.xml").write_text(
+            '<manifest><remote name="a" fetch="https://example.com/"/><default remote="a"/>'
+            '<project name="kernel/common" path="common" revision="' + "b" * 40 + '"/></manifest>')
+        with mock.patch.object(B, "REPO", repo), mock.patch.object(B, "git_cache") as fetch:
+            with self.assertRaisesRegex(ValueError, "pin different kernel/common"):
+                B.prepare_kernel(self.root / "workspace", self.root / "cache")
+        fetch.assert_not_called()
+
     def test_manifest_requires_exact_git_revision(self):
         path = self.root / "manifest.xml"
         path.write_text('<manifest><remote name="a" fetch="https://example.com/"/>'
@@ -105,6 +130,7 @@ class BootstrapTests(unittest.TestCase):
         path.write_text(path.read_text().replace('revision="main"', 'revision="' + "a" * 40 + '"'))
         self.assertEqual(B.manifest_projects(path)[0]["revision"], "a" * 40)
 
+    @unittest.skipUnless(os.name == "posix", "git_cache serializes with fcntl locks on Linux CI")
     def test_real_git_checkout_is_pinned_without_modifying_mirror(self):
         mirror = self.root / "mirror"; mirror.mkdir()
         B.run(["git", "init", "-q", mirror])
@@ -125,22 +151,26 @@ class BootstrapTests(unittest.TestCase):
     def native_workspace(self):
         """Keep Git trust checks real; stub only external compiler/ELF tools."""
         repo = self.root / "repo"
-        source = repo / "src/SukiSU"
-        source.mkdir(parents=True)
-        (source / "Cargo.lock").write_text("locked original dependencies\n")
-        (source / "uapi.h").write_text("original UAPI\n")
+        queue = repo / "patches/manager"
+        queue.mkdir(parents=True)
+        (queue / "series").write_bytes(b"0001-patch-the-fixture-uapi.patch\n")
+        (queue / "0001-patch-the-fixture-uapi.patch").write_bytes(
+            b"Subject: Patch the fixture UAPI\nUpstream-Status: Inappropriate [test fixture]\n"
+            b"Drop-when: never\n\nApply the manager queue to the pinned checkout.\n---\n"
+            b"diff --git a/uapi.h b/uapi.h\n--- a/uapi.h\n+++ b/uapi.h\n"
+            b"@@ -1 +1 @@\n-original UAPI\n+patched UAPI\n")
         (repo / "module").mkdir()
         (repo / "module/module.prop").write_text("version=local2\n")
-        (repo / "configs").mkdir()
-        (repo / "configs/source-links.json").write_text('{"manager_links": {}}\n')
         (repo / "reference").mkdir()
         for name in ("manager-arm64-uapi.json", "arm64-uapi-probe.rs.in"):
             shutil.copy2(ROOT / "reference" / name, repo / "reference" / name)
         (repo / "workspace/scripts").mkdir(parents=True)
         shutil.copy2(ROOT / "workspace/scripts/verify-delivery.py", repo / "workspace/scripts/verify-delivery.py")
         work = self.root / "native"
-        work.mkdir()
-        shutil.copytree(source, work / "source")
+        # Stands in for the pinned upstream Manager checkout; git_cache/checkout are stubbed.
+        (work / "source").mkdir(parents=True)
+        (work / "source/Cargo.lock").write_bytes(b"locked original dependencies\n")
+        (work / "source/uapi.h").write_bytes(b"original UAPI\n")
         (work / "source/uapi-link").symlink_to("uapi.h")
         (work / "ndk").mkdir()
         (work / "ndk/tool").write_text("pinned tool\n")
@@ -222,8 +252,12 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(external["source_inputs"]["before"], external["source_inputs"]["after"])
         self.assertEqual(external["historical_tag"],
                          {"name": "v4.2.0", "commit": B.MANAGER_TAG_SHA, "distance": 1, "restored": True})
-        self.assertEqual(external["source_inputs"]["before"]["ci_source"]["source_files"]["src/SukiSU/Cargo.lock"],
-                         B.sha256(repo / "src/SukiSU/Cargo.lock"))
+        fixture_patch = "patches/manager/0001-patch-the-fixture-uapi.patch"
+        self.assertEqual(external["source_inputs"]["before"]["ci_source"]["source_files"][fixture_patch],
+                         B.sha256(repo / fixture_patch))
+        self.assertEqual((work / "source/uapi.h").read_bytes(), b"patched UAPI\n")
+        self.assertEqual(external["source_inputs"]["before"]["native_source"]["uapi.h"]["sha256"],
+                         B.sha256(work / "source/uapi.h"))
         self.assertEqual(external["source_inputs"]["before"]["native_source"]["uapi-link"],
                          {"type": "symlink", "target": "uapi.h"})
         names = {"libksud.so", "Fuxi_SukiSU_40900_Zygisk_StatusFix.zip"}
@@ -249,15 +283,15 @@ class BootstrapTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"CI_SOURCE_SHA": "a" * 40}):
             with self.assertRaisesRegex(ValueError, "actual checkout"):
                 B.verify_native(work, target, dist)
-        (repo / "src/SukiSU/uapi.h").write_text("uncommitted change\n")
+        (repo / "patches/manager/series").write_bytes(b"# uncommitted change\n0001-patch-the-fixture-uapi.patch\n")
         with self.assertRaisesRegex(ValueError, "clean Git checkout"):
             B.verify_native(work, target, dist)
         self.assertFalse(dist.exists())
 
     def test_native_rejects_clean_development_commit_changed_after_assembly(self):
         repo, work, target, dist = self.native_workspace()
-        (repo / "src/SukiSU/uapi.h").write_text("new committed source\n")
-        B.run(["git", "-C", repo, "add", "src/SukiSU/uapi.h"])
+        (repo / "patches/manager/series").write_bytes(b"# new committed queue\n0001-patch-the-fixture-uapi.patch\n")
+        B.run(["git", "-C", repo, "add", "patches/manager/series"])
         B.run(["git", "-C", repo, "commit", "-qm", "Change test source identity"])
         actual = B.run(["git", "-C", repo, "rev-parse", "HEAD"])
         with mock.patch.dict(os.environ, {"CI_SOURCE_SHA": actual}):
@@ -270,13 +304,15 @@ class BootstrapTests(unittest.TestCase):
         lock = work / "source/Cargo.lock"
         original = lock.read_bytes()
         mode = lock.stat().st_mode
-        for mutation, restore in (
-                (lambda: lock.write_text("replacement dependencies\n"), lambda: lock.write_bytes(original)),
-                (lambda: lock.chmod(mode | 0o100), lambda: lock.chmod(mode)),
-                (lambda: (work / "source/new.rs").write_text("new source\n"),
-                 lambda: (work / "source/new.rs").unlink()),
-                (lambda: (work / "source/uapi-link").unlink(),
-                 lambda: (work / "source/uapi-link").symlink_to("uapi.h"))):
+        mutations = [
+            (lambda: lock.write_text("replacement dependencies\n"), lambda: lock.write_bytes(original)),
+            (lambda: (work / "source/new.rs").write_text("new source\n"),
+             lambda: (work / "source/new.rs").unlink()),
+            (lambda: (work / "source/uapi-link").unlink(),
+             lambda: (work / "source/uapi-link").symlink_to("uapi.h"))]
+        if os.name == "posix":  # Windows has no executable bit to flip
+            mutations.append((lambda: lock.chmod(mode | 0o100), lambda: lock.chmod(mode)))
+        for mutation, restore in mutations:
             with self.subTest(mutation=mutation):
                 mutation()
                 with self.assertRaisesRegex(ValueError, "changed since workspace assembly"):

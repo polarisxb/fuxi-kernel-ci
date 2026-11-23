@@ -63,7 +63,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/fuxi-inputs
-          key: fuxi-kernel-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
+          key: fuxi-kernel-inputs-${{ runner.os }}-${{ hashFiles('ci-layout.json', 'configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
       - name: Build and verify the signed kernel ZIP
         env:
           KERNEL_SIGNING_KEY_PEM: ${{ secrets.KERNEL_SIGNING_KEY_PEM }}
@@ -112,7 +112,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/fuxi-inputs
-          key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json', 'src/SukiSU/Cargo.lock') }}
+          key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('ci-layout.json', 'configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
       - name: Build the matching ARM64 status detector
         env:
           FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs

@@ -12,17 +12,19 @@ ZIP 打包。公开 Release 提供固定版本的下载 URL、源码提交号和
 
 | 路径 | 用途 |
 | --- | --- |
-| `src/common/` | 实际修改后的 Linux 源码，按路径覆盖固定上游 |
-| `src/KernelSU/` | 完整当前 builtin 驱动 |
-| `src/SukiSU/` | 配套 Manager / ksud 源码，包含 Zygisk 实时检测修复 |
+| `ci-layout.json` | 所有上游的固定 commit（kernel/common、SUSFS、SukiSU 驱动与 Manager、NDK）和版本，唯一来源 |
+| `patches/common/` | 对内核的改动，在官方 SUSFS 补丁之后按 `series` 顺序应用 |
+| `patches/driver/` | 对 SukiSU builtin 驱动的改动 |
+| `patches/manager/` | 对 SukiSU Manager / ksud 的改动（Zygisk Next 状态检测） |
 | `module/susfs4ksu/` | SUSFS local2 模块源码 |
 | `workspace/scripts/` | 构建、来源绑定、接口/模块/交付验证 |
-| `configs/`、`reference/` | 锁定版本、公开校验输入引用与链接声明 |
+| `configs/`、`reference/` | 构建配置、公开校验输入引用与链接声明 |
 | `.github/workflows/` | 自动构建和公开产物发布 |
 
-完整 Linux 树有大小写冲突及 Windows 保留文件名，所以本仓库提供可直接编辑的
-覆盖层。完整源码由 CI 从锁定上游组装；其他上游文件可以按需读取和导入。
-不要求 Windows 安装 Ubuntu、WSL 或 Android 编译工具链。
+仓库不存上游源码。CI 按"固定上游 → 官方 SUSFS 补丁 → 补丁队列"现场组装完整
+源码；上游更新时改 pin，再看哪个补丁打不上，只修那一个。每个补丁头写明原因、
+上游状态和删除条件，已被上游合并的修复在升级时直接删掉。不要求 Windows 安装
+Ubuntu、WSL 或 Android 编译工具链。
 
 ## 开发与下载
 
@@ -30,13 +32,15 @@ ZIP 打包。公开 Release 提供固定版本的下载 URL、源码提交号和
 git clone https://github.com/polarisxb/fuxi-kernel-ci.git
 cd fuxi-kernel-ci
 git switch -c my-change
-# 编辑 src/common、src/KernelSU、src/SukiSU 或 module 中的实际文件
-git add .
+python scripts/source.py edit common 0003   # 或 new 新建补丁
+# 编辑 .work/edit/ 下的文件，然后：
+python scripts/source.py refresh
+git add patches
 git commit
 git push -u origin my-change
 ```
 
-Windows 源码读取/导入、CI 状态和 agent 下载的完整命令见
+Windows 查看/编辑源码、CI 状态和 agent 下载的完整命令见
 [Windows 开发说明](docs/WINDOWS.md) 与 [产物说明](docs/ARTIFACTS.md)。
 
 分支 push 运行构建；当前 main 的成功构建发布公开 Release。下载入口：

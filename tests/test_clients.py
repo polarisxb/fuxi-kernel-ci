@@ -161,97 +161,179 @@ class DownloadTests(unittest.TestCase):
         self.assertFalse((self.output / (D.DEFAULT_ASSET + ".download.json")).is_symlink())
 
 
+def lf(path, text):
+    """Write LF bytes; Path.write_text() would emit CRLF on Windows."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(text.encode())
+
+
+def queue_patch(subject, diff):
+    return (f"Subject: {subject}\nUpstream-Status: Pending\nDrop-when: never\n\n"
+            f"Fixture patch.\n---\n{diff}")
+
+
+def hunk(path, old, new, context=()):
+    lines = "".join(f" {line}\n" for line in context)
+    count = len(context) + 1
+    return (f"diff --git a/{path} b/{path}\n--- a/{path}\n+++ b/{path}\n"
+            f"@@ -1,{count} +1,{count} @@\n{lines}-{old}\n+{new}\n")
+
+
 class SourceTests(unittest.TestCase):
+    """Patch-queue views and edit sessions against an in-memory pinned upstream."""
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        (self.root / "configs").mkdir()
-        for component in ("common", "KernelSU", "SukiSU"):
-            (self.root / "src" / component).mkdir(parents=True)
-        (self.root / "ci-layout.json").write_text(json.dumps({"kernel_common_sha": "a" * 40, "builtin_sha": "b" * 40, "manager_sha": "c" * 40}))
-        (self.root / "configs/source-links.json").write_text(json.dumps({"manager_links": {"kernel/include/uapi": "../../uapi", "manager/app/src/main/cpp/uapi": "../../../../../uapi"}}))
-        patched = patch.object(S, "ROOT", self.root)
-        patched.start()
-        self.addCleanup(patched.stop)
+        layout = {"upstreams": {
+            "common": {"commit": "a" * 40},
+            "susfs": {"url": "https://gitlab.com/simonpunk/susfs4ksu.git", "commit": "d" * 40,
+                      "kernel_patch": "kernel_patches/50.patch",
+                      "kernel_files": {"fs/susfs.c": "kernel_patches/fs/susfs.c"}},
+            "driver": {"url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git", "commit": "b" * 40},
+            "manager": {"url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git", "commit": "c" * 40},
+            "ndk": {"commit": "e" * 40}},
+            "patch_queues": {"common": "patches/common", "driver": "patches/driver", "manager": "patches/manager"}}
+        lf(self.root / "ci-layout.json", json.dumps(layout))
+        lf(self.root / "configs/source-links.json", json.dumps({"manager_links": {
+            "kernel/include/uapi": "../../uapi", "manager/app/src/main/cpp/uapi": "../../../../../uapi"}}))
+        self.upstream = {
+            ("common", "fs/namei.c"): b"upstream\n",
+            ("common", "fs/stat.c"): b"stat\nline\n",
+            ("common", "include/soc/arc/aux.h"): b"upstream AUX source\n",
+            ("susfs", "kernel_patches/fs/susfs.c"): b"susfs source\n",
+            ("susfs", "kernel_patches/50.patch"): hunk("fs/namei.c", "upstream", "hooked").encode(),
+            ("driver", "kernel/ksu.c"): b"driver\n",
+        }
+        for queue in ("driver", "manager"):
+            lf(self.root / "patches" / queue / "series", "")
+        self.common = self.root / "patches/common"
+        lf(self.common / "0001-fix-namei.patch", queue_patch("fix namei", hunk("fs/namei.c", "hooked", "fixed")))
+        lf(self.common / "0002-tune-stat.patch", queue_patch("tune stat", hunk("fs/stat.c", "line", "tuned", ["stat"])))
+        lf(self.common / "series", "0001-fix-namei.patch\n0002-tune-stat.patch\n")
+        root_patch = patch.object(S, "ROOT", self.root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
+        self.fetch_patch = patch.object(S, "fetch", side_effect=lambda name, path: self.upstream.get((name, path)))
+        self.fetch_patch.start()
+        self.addCleanup(self.fetch_patch.stop)
 
-    def test_local_overlay_is_read_without_network(self):
-        p = self.root / "src/common/fs/namei.c"
-        p.parent.mkdir()
-        p.write_bytes(b"edited-source")
-        with patch.object(S, "fetch", side_effect=AssertionError("Unexpected network")):
-            self.assertEqual(S.read("common/fs/namei.c"), b"edited-source")
+    def snapshot(self):
+        return {path.name: path.read_bytes() for path in self.common.iterdir()}
 
-    def test_declared_links_are_resolved_without_windows_symlinks(self):
-        self.assertEqual(S.logical_path("common/drivers/kernelsu/supercall.c"), ("KernelSU", "kernel/supercall.c"))
-        self.assertEqual(S.logical_path("KernelSU/uapi/feature.h"), ("KernelSU", "kernel/include/uapi/feature.h"))
-        self.assertEqual(S.logical_path("SukiSU/kernel/include/uapi/feature.h"), ("SukiSU", "uapi/feature.h"))
-        self.assertEqual(S.logical_path("manager/manager/app/src/main/cpp/uapi/feature.h"), ("SukiSU", "uapi/feature.h"))
+    def test_read_shows_upstream_susfs_and_queue_or_the_pristine_file(self):
+        self.assertEqual(S.read("common/fs/namei.c"), b"fixed\n")
+        self.assertEqual(S.read("common/fs/susfs.c"), b"susfs source\n")
+        self.assertEqual(S.read("common/fs/namei.c", upstream=True), b"upstream\n")
+        with self.assertRaisesRegex(ValueError, "does not exist"):
+            S.read("common/fs/missing.c")
 
-    def test_import_downloads_and_creates_editable_source(self):
-        with patch.object(S, "fetch", return_value=b"upstream-source") as fetch:
-            p = S.materialize("common/fs/new.c")
-        self.assertEqual(p.read_bytes(), b"upstream-source")
-        fetch.assert_called_once_with("common", "fs/new.c")
+    def test_edit_then_refresh_without_changes_rewrites_the_same_bytes(self):
+        S.edit("common", "0001")
+        S.refresh()  # store the hand-written fixture in canonical refreshed form first
+        before = self.snapshot()
+        tree = S.edit("common", "0001")
+        self.assertEqual((tree / "fs/namei.c").read_bytes(), b"fixed\n")
+        S.refresh()
+        self.assertEqual(self.snapshot(), before)
+        self.assertFalse((self.root / ".work/edit").exists())
 
-    def test_existing_source_is_not_overwritten_by_default(self):
-        p = self.root / "src/common/known.c"
-        p.write_bytes(b"my-edits")
-        with self.assertRaises(FileExistsError):
-            S.materialize("common/known.c")
-        self.assertEqual(p.read_bytes(), b"my-edits")
+    def test_refresh_keeps_the_header_and_records_the_edit(self):
+        tree = S.edit("common", "0002-tune-stat.patch")
+        lf(tree / "fs/stat.c", "stat\nretuned\n")
+        patch_file = S.refresh()
+        text = patch_file.read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("Subject: tune stat\nUpstream-Status: Pending\nDrop-when: never\n\nFixture patch.\n---\ndiff --git"))
+        self.assertEqual(text.count("\n---\n"), 1)
+        self.assertIn("+retuned\n", text)
+        self.assertEqual(S.read("common/fs/stat.c"), b"stat\nretuned\n")
 
-    def test_windows_reserved_paths_can_be_read_but_not_imported(self):
-        with patch.object(S, "fetch", return_value=b"upstream AUX source"):
-            self.assertEqual(S.read("common/include/soc/arc/aux.h"), b"upstream AUX source")
-            with self.assertRaisesRegex(ValueError, "Windows"):
-                S.materialize("common/include/soc/arc/aux.h")
+    def test_refresh_restores_everything_when_a_later_patch_stops_applying(self):
+        lf(self.common / "0002-tune-stat.patch", queue_patch("tune stat", hunk("fs/namei.c", "fixed", "tuned")))
+        before = self.snapshot()
+        tree = S.edit("common", "0001")
+        lf(tree / "fs/namei.c", "fixed differently\n")
+        with self.assertRaisesRegex(ValueError, "(?s)0002-tune-stat.patch does not apply.*nothing was written"):
+            S.refresh()
+        self.assertEqual(self.snapshot(), before)
+        S.discard()
 
-    def test_case_collision_is_rejected_even_on_linux(self):
-        p = self.root / "src/common/fs/Example.c"
-        p.parent.mkdir()
-        p.write_bytes(b"existing")
+    def test_new_patch_is_appended_with_a_header_to_complete(self):
+        tree = S.new("common", "retune-stat", ["fs/stat.c"])
+        self.assertEqual((tree / "fs/stat.c").read_bytes(), b"stat\ntuned\n")
+        lf(tree / "fs/stat.c", "stat\ntuned\nmore\n")
+        patch_file = S.refresh()
+        self.assertEqual(patch_file.name, "0003-retune-stat.patch")
+        self.assertTrue((self.common / "series").read_text().endswith("0003-retune-stat.patch\n"))
+        self.assertIn("Subject: retune stat\nUpstream-Status: Pending\nDrop-when: TODO", patch_file.read_text())
+        self.assertEqual(S.read("common/fs/stat.c"), b"stat\ntuned\nmore\n")
+
+    def test_only_one_session_and_unchanged_or_crlf_edits_are_refused(self):
+        tree = S.edit("common", "0002")
+        with self.assertRaisesRegex(ValueError, "already open"):
+            S.edit("common", "0001")
+        (tree / "fs/stat.c").write_bytes(b"stat\r\ntuned\r\n")
+        with self.assertRaisesRegex(ValueError, "CR line endings"):
+            S.refresh()
+        S.discard()
+        tree = S.new("common", "nothing", ["fs/stat.c"])
+        with self.assertRaisesRegex(ValueError, "equal the state before"):
+            S.refresh()
+        S.discard()
+        self.assertFalse((self.root / ".work/edit").exists())
+
+    def test_files_outside_the_session_are_not_slipped_into_the_patch(self):
+        before = self.snapshot()
+        tree = S.edit("common", "0001")
+        lf(tree / "fs/namei.c.orig", "editor backup\n")
+        with self.assertRaisesRegex(ValueError, "outside this patch.*namei.c.orig"):
+            S.refresh()
+        self.assertEqual(self.snapshot(), before)
+        (tree / "fs/namei.c.orig").unlink()
+        S.refresh()
+
+    def test_windows_reserved_paths_can_be_read_but_not_edited(self):
+        self.assertEqual(S.read("common/include/soc/arc/aux.h"), b"upstream AUX source\n")
+        with self.assertRaisesRegex(ValueError, "Windows"):
+            S.new("common", "aux", ["include/soc/arc/aux.h"])
         with self.assertRaisesRegex(ValueError, "case collision"):
-            S.materialize("common/fs/example.c")
+            S.new("common", "case", ["fs/Stat.c", "fs/stat.c"])
 
-    def test_traversal_and_symbolic_destination_are_rejected(self):
+    def test_traversal_and_symbolic_work_directory_are_rejected(self):
         for name in ("common/../../outside", "/common/fs/x.c", "common/.git/config", "C:/common/fs/x.c"):
             with self.subTest(name=name), self.assertRaises(ValueError):
-                S.materialize(name)
+                S.logical_path(name)
         outside = self.root / "outside"
         outside.mkdir()
-        (self.root / "src/common/link").symlink_to(outside, target_is_directory=True)
-        with self.assertRaises(ValueError):
-            S.materialize("common/link/x.c")
+        (self.root / ".work").symlink_to(outside, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "symbolic link"):
+            S.edit("common", "0001")
+        self.assertEqual(list(outside.iterdir()), [])
 
-    def test_google_fallback_decodes_the_pinned_file(self):
+    def test_declared_links_are_resolved_without_windows_symlinks(self):
+        self.assertEqual(S.logical_path("common/drivers/kernelsu/supercall.c"), ("driver", "kernel/supercall.c"))
+        self.assertEqual(S.logical_path("KernelSU/uapi/feature.h"), ("driver", "kernel/include/uapi/feature.h"))
+        self.assertEqual(S.logical_path("SukiSU/kernel/include/uapi/feature.h"), ("manager", "uapi/feature.h"))
+        self.assertEqual(S.logical_path("manager/manager/app/src/main/cpp/uapi/feature.h"), ("manager", "uapi/feature.h"))
+
+    def test_fetch_uses_only_pinned_known_endpoints(self):
+        self.fetch_patch.stop()
         calls = []
         def transport(request, timeout):
             calls.append(request.full_url)
             if "raw.githubusercontent.com" in request.full_url:
                 raise HTTPError(request.full_url, 404, "missing", {}, None)
-            return io.BytesIO(base64.b64encode(b"known kernel source"))
+            if "googlesource" in request.full_url:
+                return io.BytesIO(base64.b64encode(b"known kernel source"))
+            return io.BytesIO(b"raw file")
         with patch.object(S, "urlopen", transport):
             self.assertEqual(S.fetch("common", "include/linux/test.h"), b"known kernel source")
-        self.assertTrue(all("a" * 40 in url for url in calls))
-
-    def test_component_directory_cannot_redirect_imports(self):
-        base = self.root / "src/common"
-        base.rmdir()
-        outside = self.root / "outside"
-        outside.mkdir()
-        base.symlink_to(outside, target_is_directory=True)
-        with self.assertRaisesRegex(ValueError, "escapes"):
-            S.materialize("common/new.c")
-
-    def test_source_root_cannot_redirect_imports(self):
-        source_root = self.root / "src"
-        source_root.rename(self.root / "saved-src")
-        outside = self.root / "outside"
-        (outside / "common").mkdir(parents=True)
-        source_root.symlink_to(outside, target_is_directory=True)
-        with self.assertRaisesRegex(ValueError, "escapes"):
-            S.materialize("common/new.c")
+            self.assertIsNone(S.fetch("driver", "kernel/missing.c"))
+            self.assertEqual(S.fetch("susfs", "kernel_patches/fs/susfs.c"), b"raw file")
+        self.assertTrue(all("a" * 40 in url for url in calls[:2]))
+        self.assertIn("https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/" + "b" * 40 + "/kernel/missing.c", calls)
+        self.assertIn("https://gitlab.com/simonpunk/susfs4ksu/-/raw/" + "d" * 40 + "/kernel_patches/fs/susfs.c", calls)
 
 
 class ReleaseCollectionTests(unittest.TestCase):

@@ -1,0 +1,56 @@
+Subject: Makefile: use the fixed 40900 version without network access
+Upstream-Status: Pending [proposal: respect a preset KSU_VERSION and skip git/curl]
+Drop-when: upstream lets a build set KSU_VERSION without running git or curl
+
+The upstream Makefile runs git and queries the GitHub API while it is
+parsed to derive KSU_VERSION, so the result depends on the network and
+on upstream activity. Use the release count of main 904c60d1
+(40000 + 3715 - 2815 = 40900) and a version string that names this
+builtin commit.
+---
+diff --git a/kernel/Makefile b/kernel/Makefile
+index e71a0bb02b83c0a3646b6cccaa4317b0683e0078..1b81f28643960ab7dba8baf4653b204cdccd12f4 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -17,35 +17,12 @@ else
+ ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include
+ endif
+ 
+-MDIR    := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+-
+-REPO_OWNER  := SukiSU-Ultra
+-REPO_NAME   := SukiSU-Ultra
+-REPO_BRANCH := main
+-
+-VERSION_BASE    := 40000
+-VERSION_OFFSET  := 2815
+-
+-GIT_BIN  := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
+-CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
+-
+-KSU_SRC := $(if $(filter $(srctree),$(src)),$(src),$(srctree)/$(src))
+-KSU_SRC := $(if $(wildcard $(KSU_SRC)/../.git),$(KSU_SRC),$(MDIR))
+-
+-git_short_sha    = $(shell cd $(KSU_SRC) && $(GIT_BIN) rev-parse --short=8 HEAD 2>/dev/null)
+-git_branch       = $(shell cd $(KSU_SRC) && $(GIT_BIN) rev-parse --abbrev-ref HEAD 2>/dev/null)
+-git_commit_count = $(shell cd $(KSU_SRC) && $(GIT_BIN) rev-list --count $(REPO_BRANCH) 2>/dev/null)
+-git_latest_tag   = $(shell cd $(KSU_SRC) && $(GIT_BIN) describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+-
+-$(shell cd $(KSU_SRC) 2>/dev/null && [ -f ../.git/shallow ] && $(GIT_BIN) fetch --unshallow 2>/dev/null)
+-
+-GITHUB_API_BASE  := https://api.github.com/repos/$(REPO_OWNER)/$(REPO_NAME)
+-KSU_GITHUB_VER   := $(shell $(CURL_BIN) -s "$(GITHUB_API_BASE)/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"v?([^"]+)".*/\1/')
+-GITHUB_COMMITS   := $(shell $(CURL_BIN) -sI "$(GITHUB_API_BASE)/commits?sha=$(REPO_BRANCH)&per_page=1" 2>/dev/null | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p')
+-LOCAL_COUNT     := $(if $(GITHUB_COMMITS),$(GITHUB_COMMITS),$(git_commit_count))
+-KSU_VERSION     := $(if $(LOCAL_COUNT),$(shell expr $(VERSION_BASE) + $(LOCAL_COUNT) - $(VERSION_OFFSET)),13000)
+-VERSION_TAG     := $(or $(KSU_GITHUB_VER),$(git_latest_tag),4.2.0)
+-KSU_VERSION_FULL := $(if $(call git_short_sha),v$(VERSION_TAG)-$(call git_short_sha)@$(call git_branch),v$(VERSION_TAG)-$(REPO_NAME)-unknown@unknown)
++# Pinned official builtin v4.2.0: e2912817f4e1b194e582a06e0b5eacf6a3fb7083.
++# This branch uses the main release count, not builtin-local ancestry.
++# Fixed main release reference 904c60d1 has 3715 commits: 40000+3715-2815=40900.
++REPO_NAME := SukiSU-Ultra
++KSU_VERSION := 40900
++KSU_VERSION_FULL := v4.2.0-builtin-e2912817-susfs-local
+ $(info -- $(REPO_NAME) version: $(KSU_VERSION) [$(KSU_VERSION_FULL)])
+ 
+ ccflags-y += -DKSU_VERSION=$(KSU_VERSION)

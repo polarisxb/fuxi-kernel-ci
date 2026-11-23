@@ -1,0 +1,85 @@
+Subject: susfs: compare the target inode in hash lookups
+Upstream-Status: Pending [simonpunk/susfs4ksu gki-android13-5.15]
+Drop-when: upstream compares target_ino before using a hash entry
+
+hash_for_each_possible_rcu() visits every entry in the key's bucket,
+so entries for other inodes on the same device matched too and their
+kstat spoof or open redirect was applied to the wrong file. Compare
+target_ino as well as the device.
+---
+diff --git a/fs/susfs.c b/fs/susfs.c
+index becf35466d3e021d00730eacad7dce84f60689e3..cb6a70afc806b850acbf179d1d5e0c21fceb031d 100644
+--- a/fs/susfs.c
++++ b/fs/susfs.c
+@@ -523,8 +523,9 @@ void susfs_sus_kstat_spoof_generic_fillattr(struct inode *inode, struct kstat *s
+ out_spoof_kstat:
+ 	rcu_read_lock();
+ 	hash_for_each_possible_rcu(SUS_KSTAT_HLIST, entry, node, target_ino) {
+-		if (entry->target_dev == target_dev &&
+-			entry->is_fuse == is_fuse)
++		if (entry->target_ino == target_ino &&
++		    entry->target_dev == target_dev &&
++		    entry->is_fuse == is_fuse)
+ 		{
+ 			SUSFS_LOGI("spoofing kstat for path: %s, target_ino: %lu, target_dev: %u\n",
+ 					entry->info.target_pathname, target_ino, target_dev);
+@@ -596,8 +597,9 @@ void susfs_sus_kstat_spoof_show_map_vma(struct inode *inode, dev_t *out_dev, uns
+ out_spoof_kstat:
+ 	rcu_read_lock();
+ 	hash_for_each_possible_rcu(SUS_KSTAT_HLIST, entry, node, target_ino) {
+-		if (entry->target_dev == target_dev &&
+-			entry->is_fuse == is_fuse)
++		if (entry->target_ino == target_ino &&
++		    entry->target_dev == target_dev &&
++		    entry->is_fuse == is_fuse)
+ 		{
+ 			SUSFS_LOGI("spoofing kstat for target_ino: %lu, target_dev: %u\n", target_ino, target_dev);
+ 			*out_dev = entry->info.spoofed_dev;
+@@ -936,6 +938,7 @@ struct filename *susfs_open_redirect_spoof_do_sys_openat(struct inode *inode) {
+ 
+ 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
+ 		if (!entry->reversed_lookup_only &&
++			entry->target_ino == inode->i_ino &&
+ 			entry->target_dev == inode->i_sb->s_dev)
+ 		{
+ 			switch(entry->info.uid_scheme) {
+@@ -986,6 +989,7 @@ int susfs_open_redirect_spoof_vfs_readlink(struct inode *inode, char __user *buf
+ 
+ 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
+ 		if (entry->reversed_lookup_only &&
++			entry->target_ino == inode->i_ino &&
+ 			entry->target_dev == inode->i_sb->s_dev)
+ 		{
+ 			SUSFS_LOGI("spoof path '%s' to '%s'\n",
+@@ -1016,6 +1020,7 @@ int susfs_open_redirect_spoof_do_proc_readlink(struct inode *inode, char *tmp_bu
+ 
+ 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
+ 		if (entry->reversed_lookup_only &&
++			entry->target_ino == inode->i_ino &&
+ 			entry->target_dev == inode->i_sb->s_dev)
+ 		{
+ 			SUSFS_LOGI("spoof path '%s' to '%s'\n",
+@@ -1041,6 +1046,7 @@ int susfs_open_redirect_spoof_vfs_statfs(struct inode *inode, struct kstatfs *bu
+ 
+ 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
+ 		if (entry->reversed_lookup_only &&
++			entry->target_ino == inode->i_ino &&
+ 			entry->target_dev == inode->i_sb->s_dev)
+ 		{
+ 			SUSFS_LOGI("spoof kstatfs for redirected path: '%s'\n",
+@@ -1060,6 +1066,7 @@ int susfs_open_redirect_spoof_seq_show(struct inode *inode, int *out_mnt_id, uns
+ 
+ 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
+ 		if (entry->reversed_lookup_only &&
++			entry->target_ino == inode->i_ino &&
+ 			entry->target_dev == inode->i_sb->s_dev)
+ 		{
+ 			*out_mnt_id = entry->spoofed_mnt_id;
+@@ -1083,6 +1090,7 @@ int susfs_open_redirect_spoof_show_map_vma_srcu(struct inode *inode, unsigned lo
+ 
+ 	hash_for_each_possible_rcu(OPEN_REDIRECT_HLIST, entry, node, inode->i_ino) {
+ 		if (entry->reversed_lookup_only &&
++			entry->target_ino == inode->i_ino &&
+ 			entry->target_dev == inode->i_sb->s_dev)
+ 		{
+ 			SUSFS_LOGI("spoof maps ino/dev/name for redirected path: '%s'\n",

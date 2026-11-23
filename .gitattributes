@@ -18,6 +18,7 @@
 *.a -text
 *.o -text
 *.bin -text
-src/SukiSU/userspace/ksud/bin/** -text
+# Patch files keep upstream whitespace (trailing spaces in context lines).
+patches/**/*.patch -whitespace
 module/susfs4ksu/bin/** -text
 

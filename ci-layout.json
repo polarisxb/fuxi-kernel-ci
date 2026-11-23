@@ -1,11 +1,48 @@
 {
   "repository": "polarisxb/fuxi-kernel-ci",
   "visibility": "public",
-  "source_layout": "editable-overlay",
-  "kernel_common_sha": "f4321180a3973d19b626b3eef51871199e4e1fac",
-  "builtin_sha": "e2912817f4e1b194e582a06e0b5eacf6a3fb7083",
-  "susfs_sha": "bca0d2333c1a7d717e7278b019d7af7ba1d16005",
-  "manager_sha": "904c60d18f026340ce38ca2d5a1da529aadcba1a",
+  "source_layout": "pinned-upstreams-with-patch-queues",
+  "upstreams": {
+    "common": {
+      "url": "https://android.googlesource.com/kernel/common",
+      "commit": "f4321180a3973d19b626b3eef51871199e4e1fac"
+    },
+    "susfs": {
+      "url": "https://gitlab.com/simonpunk/susfs4ksu.git",
+      "branch": "gki-android13-5.15",
+      "commit": "bca0d2333c1a7d717e7278b019d7af7ba1d16005",
+      "version": "v2.3.0",
+      "kernel_patch": "kernel_patches/50_add_susfs_in_gki-android13-5.15.patch",
+      "kernel_files": {
+        "fs/susfs.c": "kernel_patches/fs/susfs.c",
+        "include/linux/susfs.h": "kernel_patches/include/linux/susfs.h",
+        "include/linux/susfs_def.h": "kernel_patches/include/linux/susfs_def.h"
+      }
+    },
+    "driver": {
+      "url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git",
+      "branch": "builtin",
+      "commit": "e2912817f4e1b194e582a06e0b5eacf6a3fb7083",
+      "archive": "downloads/builtin-e2912817f4e1.tar.gz"
+    },
+    "manager": {
+      "url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git",
+      "branch": "main",
+      "commit": "904c60d18f026340ce38ca2d5a1da529aadcba1a",
+      "tag": "v4.2.0",
+      "tag_commit": "85eb4a95b8a61d756ecf53b9c5785e48e1b15039",
+      "git_count": 3715
+    },
+    "ndk": {
+      "url": "https://android.googlesource.com/toolchain/prebuilts/ndk/r23",
+      "commit": "93532f3052c14fbb337ff57d5732128dc7481ee6"
+    }
+  },
+  "patch_queues": {
+    "common": "patches/common",
+    "driver": "patches/driver",
+    "manager": "patches/manager"
+  },
   "kernel_release": "5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r2",
   "lto": "full",
   "lto_partitions": 1,
@@ -15,11 +52,6 @@
   "artifact_strategy": "immutable-public-release-per-main-commit",
   "source_epoch": 1776217181,
   "source_timestamp": "Tue, 14 Apr 2026 18:39:41 -0700",
-  "source_paths": {
-    "common": "src/common",
-    "builtin": "src/KernelSU",
-    "manager": "src/SukiSU"
-  },
   "workflow_interfaces": {
     "kernel": "bash scripts/ci-build.sh --workspace WORK --dist DIST",
     "native": "bash scripts/build-ksud.sh --workspace WORK --dist DIST"

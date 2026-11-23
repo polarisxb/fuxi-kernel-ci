@@ -220,7 +220,7 @@ def restore_links(root, declarations):
         path.symlink_to(value, target_is_directory=target.is_dir())
 
 
-def capture_patches(workspace):
+def capture_patches(workspace, builtin_archive):
     common = workspace / "kernel/common"
     patches = workspace / "patches"
     patches.mkdir(exist_ok=True)
@@ -234,11 +234,8 @@ def capture_patches(workspace):
         require(b"diff --git a/drivers/kernelsu b/drivers/kernelsu" in result.stdout,
                 "Captured source patch lacks the required driver link")
         (patches / "common-final.diff").write_bytes(result.stdout)
-        pristine = temp / "pristine"
-        pristine.mkdir()
-        with tarfile.open(workspace / str(relative(UPSTREAMS["driver"]["archive"]))) as archive:
-            archive.extractall(pristine, filter="data")
-        tree = next(pristine.iterdir())
+        tree = temp / "pristine"
+        extract_single_tree(builtin_archive, tree)
         run(["git", "init", "-q"], cwd=tree)
         run(["git", "add", "-f", "-A", "."], cwd=tree)
         baseline = run(["git", "write-tree"], cwd=tree)
@@ -290,15 +287,55 @@ def extract_single_tree(archive, destination):
         children[0].rename(destination)
 
 
-def install_susfs(workspace, common, cache, mirror_root=None):
+def install_susfs(workspace, common, cached):
     """Fetch SUSFS at its pin and apply the official GKI kernel patch to common."""
     info = UPSTREAMS["susfs"]
-    mirror = mirror_root / "susfs4ksu" if mirror_root else None
-    cached = git_cache(info["url"], info["commit"], cache, mirror=mirror)
     source = workspace / "upstream/susfs4ksu"
     checkout(cached, info["commit"], source, sparse=["kernel_patches"])
     record = Q.install_susfs(common, source, info)
     return {"url": info["url"], "commit": info["commit"], "version": info["version"], **record}
+
+
+def archive_upstreams(workspace, cache, mirror_root, identity):
+    directory = workspace / "upstream/archives"
+    directory.mkdir(parents=True)
+    caches = {}
+    for name, archive_key, mirror_name in (("driver", "builtin_archive", "KernelSU"),
+                                           ("susfs", "susfs_archive", "susfs4ksu"),
+                                           ("manager", "manager_archive", "KernelSU")):
+        upstream = UPSTREAMS[name]
+        revision = upstream["commit"]
+        mirror = mirror_root / mirror_name if mirror_root else None
+        cached = git_cache(upstream["url"], revision, cache, mirror=mirror)
+        run(["git", "-C", cached, "archive", "--format=tar.gz", f"--prefix={name}-{revision}/",
+             "--output", directory / identity[archive_key], revision])
+        caches[name] = cached
+    return caches["susfs"]
+
+
+def verify_driver_archive(workspace, driver):
+    # The legacy archive lives in the immutable input release. Compare its unpacked
+    # bytes and modes; gzip headers and top-level archive names are not source inputs.
+    lock = json.loads((REPO / "reference/inputs.lock.json").read_bytes())
+    archives = [path for path in lock["files"] if re.fullmatch(r"downloads/builtin-[0-9a-f]+\.tar\.gz", path)]
+    require(len(archives) == 1, "Expected one legacy driver archive in the locked input release")
+    verifier = load_delivery_verifier()
+    with tempfile.TemporaryDirectory(dir=workspace) as temporary:
+        old = Path(temporary) / "legacy"
+        extract_single_tree(workspace / archives[0], old)
+        expected, actual = verifier.tree_manifest(old), verifier.tree_manifest(driver)
+        if actual != expected:
+            changed = sorted(name for name in expected.keys() | actual.keys()
+                             if expected.get(name) != actual.get(name))
+            raise ValueError(f"Git driver archive differs from the legacy baseline: {changed[:12]}")
+    print(f"Git driver tree matches the legacy archive ({len(actual)} entries)", flush=True)
+
+
+def load_delivery_verifier():
+    spec = importlib.util.spec_from_file_location("bootstrap_delivery", REPO / "workspace/scripts/verify-delivery.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def write_workspace_identity(workspace, projects):
@@ -337,10 +374,14 @@ def prepare_kernel(workspace, cache, mirror_root=None):
             require(not path.exists() and not path.is_symlink(), f"Manifest link collision: {path}")
             path.symlink_to(os.path.relpath(target, path.parent), target_is_directory=target.is_dir())
     common = kernel / "common"
-    susfs = install_susfs(workspace, common, cache, mirror_root)
+    identity = load_helper("identity").derive(LAYOUT)
+    susfs_cache = archive_upstreams(workspace, cache, mirror_root, identity)
+    susfs = install_susfs(workspace, common, susfs_cache)
     Q.write_scmversion(common, LAYOUT["kernel_release"], COMMON_SHA)
     queues = {"common": Q.apply_series(common, Q.queue_directory(REPO, LAYOUT, "common"))}
-    extract_single_tree(workspace / str(relative(UPSTREAMS["driver"]["archive"])), kernel / "KernelSU")
+    builtin_archive = workspace / "upstream/archives" / identity["builtin_archive"]
+    extract_single_tree(builtin_archive, kernel / "KernelSU")
+    verify_driver_archive(workspace, kernel / "KernelSU")
     queues["driver"] = Q.apply_series(kernel / "KernelSU", Q.queue_directory(REPO, LAYOUT, "driver"))
     links = json.loads((REPO / "configs/source-links.json").read_text())["kernel_links"]
     restore_links(workspace, links)
@@ -352,11 +393,11 @@ def prepare_kernel(workspace, cache, mirror_root=None):
     write_workspace_identity(workspace, projects)
     (workspace / "configs/ci-source.json").write_text(json.dumps(ci_source_info(), indent=2) + "\n")
     (workspace / "reports").mkdir()
-    capture_patches(workspace)
+    capture_patches(workspace, builtin_archive)
     return {"kind": "kernel", "projects": [{k: v for k, v in p.items() if k != "links"}
                                              for p in projects],
             "susfs": susfs, "driver": {"commit": UPSTREAMS["driver"]["commit"],
-                                       "archive": UPSTREAMS["driver"]["archive"]},
+                                       "archive": builtin_archive.relative_to(workspace).as_posix()},
             "patch_queues": queues, "kernel_release": LAYOUT["kernel_release"],
             "source_epoch": LAYOUT["source_epoch"], "source_timestamp": LAYOUT["source_timestamp"]}
 
@@ -392,6 +433,7 @@ def manager_tag_info(source, restore_missing=False):
 
 
 def prepare_native(workspace, cache, mirror_root=None):
+    identity = load_helper("identity").derive(LAYOUT)
     ci_source = ci_source_info()
     require(not ci_source["local_validation_only"],
             "Native builds require a clean committed development checkout")
@@ -403,7 +445,8 @@ def prepare_native(workspace, cache, mirror_root=None):
     queue = Q.apply_series(source, Q.queue_directory(REPO, LAYOUT, "manager"))
     count = int(run(["git", "rev-list", "--count", "HEAD"], cwd=source))
     describe = run(["git", "describe", "--tags", "--always"], cwd=source)
-    require(count == 3715 and describe == "v4.2.0-1-g904c60d1",
+    require(count == MANAGER_GIT_COUNT and describe == "v" + identity["manager_version_name"]
+            and 40000 - 2815 + count == identity["manager_version_code"],
             f"Original Manager build identity changed: {count}, {describe}")
     ndk_mirror = mirror_root / "prebuilts/ndk-r23" if mirror_root else None
     ndk_cache = git_cache(NDK_URL, NDK_SHA, cache, mirror=ndk_mirror)
@@ -418,6 +461,7 @@ def prepare_native(workspace, cache, mirror_root=None):
 
 
 def native_inputs(workspace):
+    identity = load_helper("identity").derive(LAYOUT)
     ci_source = ci_source_info()
     require(not ci_source["local_validation_only"],
             "Native builds require a clean committed development checkout")
@@ -426,17 +470,15 @@ def native_inputs(workspace):
     historical_tag.pop("restored")
     count = int(run(["git", "-C", source, "rev-list", "--count", "HEAD"]))
     describe = run(["git", "-C", source, "describe", "--tags", "--always"])
-    require(count == 3715 and describe == "v4.2.0-1-g904c60d1",
+    require(count == MANAGER_GIT_COUNT and describe == "v" + identity["manager_version_name"]
+            and 40000 - 2815 + count == identity["manager_version_code"],
             "Native build requires the original full upstream Git history")
     require(run(["git", "-C", workspace / "ndk", "rev-parse", "HEAD"]) == NDK_SHA
             and not run(["git", "-C", workspace / "ndk", "status", "--porcelain", "--untracked-files=all"]),
             "Pinned NDK checkout changed")
     # Share the delivery verifier's file/mode/link records instead of inventing
     # a second source snapshot format. Mutable Git internals are excluded.
-    spec = importlib.util.spec_from_file_location("native_source_helpers",
-                                                REPO / "workspace/scripts/verify-delivery.py")
-    helper = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(helper)
+    helper = load_delivery_verifier()
     return {"ci_source": ci_source, "native_source": helper.tree_manifest(source),
             "manager_sha": MANAGER_SHA, "git_count": count, "git_describe": describe,
             "historical_tag": historical_tag, "version_code": 40000 - 2815 + count,
@@ -466,6 +508,7 @@ def verify_native_inputs(workspace, before_build=False):
 
 
 def verify_native(workspace, target_dir, dist):
+    identity = load_helper("identity").derive(LAYOUT)
     inputs = verify_native_inputs(workspace)
     artifact = target_dir / "aarch64-linux-android/release/ksud"
     require(artifact.is_file(), "Native build output missing")
@@ -479,12 +522,12 @@ def verify_native(workspace, target_dir, dist):
     needed = re.findall(r"\(NEEDED\).*?\[([^]]+)\]", dynamic)
     require(set(needed) <= {"liblog.so", "libdl.so", "libm.so", "libc.so"}
             and "libc.so" in needed, f"Unexpected native runtime dependencies: {needed}")
-    require(b"4.2.0-1-g904c60d1" in artifact.read_bytes(), "Original version string missing")
+    require(identity["manager_version_name"].encode() in artifact.read_bytes(), "Original version string missing")
     bindings = list((target_dir / "aarch64-linux-android/release/build").glob("ksud-*/out/bindings.rs"))
     require(len(bindings) == 1, "Actual bindgen output missing or ambiguous")
     build_output = (bindings[0].parents[1] / "output").read_text().splitlines()
-    require("cargo:rustc-env=VERSION_CODE=40900" in build_output
-            and "cargo:rustc-env=VERSION_NAME=4.2.0-1-g904c60d1" in build_output,
+    require(f"cargo:rustc-env=VERSION_CODE={identity['manager_version_code']}" in build_output
+            and f"cargo:rustc-env=VERSION_NAME={identity['manager_version_name']}" in build_output,
             "Actual Cargo build did not retain the original Manager version identity")
     expected = json.loads((REPO / "reference/manager-arm64-uapi.json").read_text())
     require(len(expected) == 144, "Expected ARM64 UAPI comparison must cover 144 values")
@@ -520,7 +563,7 @@ def verify_native(workspace, target_dir, dist):
             "upstream_sha": MANAGER_SHA, "repository": os.environ.get("GITHUB_REPOSITORY", "polarisxb/fuxi-kernel-ci"),
             "source_ref": os.environ.get("CI_SOURCE_REF", os.environ.get("GITHUB_REF", "")),
             "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
-            "version_code": inputs["after"]["version_code"], "version_name": "4.2.0-1-g904c60d1", "android_api": 26,
+            "version_code": inputs["after"]["version_code"], "version_name": identity["manager_version_name"], "android_api": 26,
             "rustc": rustc, "ndk_revision": "23.1.7779620", "ndk_sha": NDK_SHA,
             "source_inputs": inputs,
             "historical_tag": json.loads((workspace / "bootstrap.json").read_text())["historical_tag"],
@@ -530,11 +573,11 @@ def verify_native(workspace, target_dir, dist):
             "elf_architecture": "AArch64", "interpreter": "/system/bin/linker64", "needed": needed,
             "actual_build": True, "official_signed_apk": False, "device_operations": False}
     info["artifacts"] = {final.name: {"sha256": sha256(final), "bytes": final.stat().st_size}}
-    note = ("Local patched SukiSU 40900 ARM64 executable. Not an official signed APK.\n"
+    note = (f"Local patched SukiSU {identity['manager_version_code']} ARM64 executable. Not an official signed APK.\n"
             "Manager runs extracted nativeLibraryDir/libksud.so; changing only /data/adb/ksud is insufficient.\n"
             "Check version, APK, privileges and SELinux labels; back up current files before deployment.\n"
             "Updating or reinstalling Manager re-extracts the original library.\n")
-    archive = dist / "Fuxi_SukiSU_40900_Zygisk_StatusFix.zip"
+    archive = dist / identity["native_zip"]
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as bundle:
         bundle.write(final, final.name)
         # The ZIP cannot embed its own digest. Internal metadata binds the

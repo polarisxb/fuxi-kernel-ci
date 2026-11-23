@@ -40,6 +40,17 @@ class UapiTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 report = json.loads((self.root / 'reports/uapi/complete-uapi-alignment.json').read_text())
                 self.assertTrue(report['arm64_values_all_equal'])
+                identity = json.loads((self.root / 'configs/build-identity.json').read_bytes())
+                self.assertEqual(report['manager_sha'], identity['manager_commit'])
+                self.assertEqual(report['kernel_sha'], identity['driver_commit'])
+
+    def test_missing_build_identity_rejected_in_both_modes(self):
+        (self.root / 'configs/build-identity.json').unlink()
+        for optimized in (False, True):
+            with self.subTest(optimized=optimized):
+                result = self.run_verifier(optimized)
+                self.assertNotEqual(result.returncode, 0, 'Missing build identity was accepted')
+                self.assertIn('build-identity.json', result.stderr)
 
     def test_wrong_kernel_magic_rejected_in_both_modes(self):
         header = self.headers / 'supercall.h'

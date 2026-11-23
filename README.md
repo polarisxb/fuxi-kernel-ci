@@ -26,6 +26,10 @@ ZIP 打包。公开 Release 提供固定版本的下载 URL、源码提交号和
 上游状态和删除条件，已被上游合并的修复在升级时直接删掉。不要求 Windows 安装
 Ubuntu、WSL 或 Android 编译工具链。
 
+升级时在 `ci-layout.json` 更新固定提交和版本身份。运行 `python scripts/identity.py --json`
+可预览产物名、内核显示串及三个上游源码归档名。CI 将同一份身份写入构建来源记录，
+供离线交付与下载校验使用。内核及 NDK 的提交还须与锁定 manifest 一致。
+
 ## 开发与下载
 
 ```powershell

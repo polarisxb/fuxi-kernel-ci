@@ -22,8 +22,7 @@
     "driver": {
       "url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git",
       "branch": "builtin",
-      "commit": "e2912817f4e1b194e582a06e0b5eacf6a3fb7083",
-      "archive": "downloads/builtin-e2912817f4e1.tar.gz"
+      "commit": "e2912817f4e1b194e582a06e0b5eacf6a3fb7083"
     },
     "manager": {
       "url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git",

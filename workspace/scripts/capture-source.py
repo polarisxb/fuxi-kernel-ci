@@ -33,7 +33,8 @@ with tempfile.TemporaryDirectory(prefix='fuxi-source-capture-') as temporary:
 
     pristine = work / 'pristine'
     pristine.mkdir()
-    with tarfile.open(ROOT / 'downloads/builtin-e2912817f4e1.tar.gz') as archive:
+    identity = json.loads((ROOT / 'configs/build-identity.json').read_bytes())
+    with tarfile.open(ROOT / 'upstream/archives' / identity['builtin_archive']) as archive:
         archive.extractall(pristine, filter='data')
     tree = next(pristine.iterdir())
     run(['git', 'init', '-q'], tree)

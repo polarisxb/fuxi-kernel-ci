@@ -50,9 +50,17 @@ tag 消失也拒绝。恢复记录随原生 metadata 发布，`build.rs` 的 Git
 3. `.scmversion`：由 `kernel_release` 生成，并校验它以本树 Makefile 的版本开头、
    包含 common commit 前 12 位。
 4. `patches/common/series`：本仓库对内核的改动，按顺序严格应用（无 fuzz）。
-5. `kernel/KernelSU`：解包 `upstreams.driver.archive`（输入包中锁定的 builtin
-   源码归档），再应用 `patches/driver/series`。
+5. `kernel/KernelSU` 取自固定 driver 提交的 Git 归档。在应用 `patches/driver/series`
+   前，逐项核对新树与旧输入包中的 builtin 树，包括内容、可执行位与符号链接目标。
 6. 原生构建：固定 Manager checkout 上应用 `patches/manager/series`。
+
+三个固定提交的源码归档由 `git archive` 生成在 `upstream/archives/`。捕捉驱动差异与
+打包交付使用同一份 builtin 归档。使用 `--mirror-root` 时，`KernelSU/` 镜像需要
+包含 builtin 和 Manager 两个固定提交。
+
+组装时从 manifest 生成 `configs/locked-workspace-inputs.json`，按项目顺序记录
+路径、提交和只读属性。校对内核 Makefile 后将版本和文件名写入 `configs/build-identity.json`；
+两个文件都随构建配置冻结，并随离线交付包分发。
 
 任何补丁打不上都会以补丁文件名报错停止，不会带着旧改动继续构建。组装后仍从
 实际 Git checkout 生成 `common-final.diff` / `sukisu-final.diff`，与发布中的

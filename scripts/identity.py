@@ -28,6 +28,8 @@ def derive(layout):
     if not release.endswith(required_suffix.format_map(values)):
         raise ValueError("kernel_release is inconsistent with the locked commits and versions")
     apk = upstreams["manager"]["apk"]
+    values["manager_git_count"] = upstreams["manager"]["git_count"]
+    values["manager_tag"] = upstreams["manager"]["tag"]
     values.update(apk_name=apk["name"], apk_sha256=apk["sha256"])
     for name, template in layout["names"].items():
         value = template.format_map(values)

@@ -2,6 +2,7 @@
 """Download a public, completed CI release and verify its payload/source SHA."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,8 +12,14 @@ from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 
 
+spec = importlib.util.spec_from_file_location("artifact_identity", Path(__file__).with_name("identity.py"))
+identity_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(identity_module)
+IDENTITY = identity_module.from_repository()
+
+
 DEFAULT_REPO = "polarisxb/fuxi-kernel-ci"
-DEFAULT_ASSET = "Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip"
+DEFAULT_ASSET = IDENTITY["kernel_zip"]
 API = "https://api.github.com"
 
 

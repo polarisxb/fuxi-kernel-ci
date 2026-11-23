@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import shutil
+import sys
 import tempfile
 import textwrap
 import unittest
@@ -345,12 +347,15 @@ class ReleaseCollectionTests(unittest.TestCase):
         match = re.search(r"python3 - <<'PY'\n(.*?)\n\s+PY\n", text, re.S)
         self.assertIsNotNone(match)
         self.script = textwrap.dedent(match[1])
+        (self.root / "scripts").mkdir()
+        shutil.copyfile(ROOT / "scripts/identity.py", self.root / "scripts/identity.py")
+        shutil.copyfile(ROOT / "ci-layout.json", self.root / "ci-layout.json")
         self.sha = "a" * 40
         self.env = dict(os.environ, GITHUB_SHA=self.sha, GITHUB_REPOSITORY=D.DEFAULT_REPO,
                         GITHUB_REF="refs/heads/main", GITHUB_RUN_ID="1")
         for component, names, metadata_name in (
-            ("kernel", (D.DEFAULT_ASSET, "SUSFS_R28_Fuxi230_40900_local2.zip"), "kernel-build-info.json"),
-            ("native", ("Fuxi_SukiSU_40900_Zygisk_StatusFix.zip", "libksud.so"), "build-info.json"),
+            ("kernel", (D.DEFAULT_ASSET, D.IDENTITY["module_zip"]), "kernel-build-info.json"),
+            ("native", (D.IDENTITY["native_zip"], "libksud.so"), "build-info.json"),
         ):
             folder = self.root / "collected" / component
             folder.mkdir(parents=True)
@@ -363,7 +368,7 @@ class ReleaseCollectionTests(unittest.TestCase):
             (folder / "SHA256SUMS").write_text("".join(lines))
 
     def collect(self):
-        return subprocess.run(["python3", "-c", self.script], cwd=self.root, env=self.env,
+        return subprocess.run([sys.executable, "-B", "-c", self.script], cwd=self.root, env=self.env,
                               text=True, capture_output=True, timeout=20)
 
     def test_published_metadata_binds_all_verified_payloads(self):

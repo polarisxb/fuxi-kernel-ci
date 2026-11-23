@@ -7,9 +7,11 @@ def require(condition, message):
 ROOT=Path(__file__).resolve().parent.parent
 D=ROOT/'reports/uapi';D.mkdir(parents=True,exist_ok=True)
 (D/'complete-uapi-alignment.json').unlink(missing_ok=True)
+IDENTITY=json.loads((ROOT/'configs/build-identity.json').read_bytes())
 KERNEL=ROOT/'kernel/KernelSU/kernel/include/uapi'
 MANAGER=ROOT/'configs/manager40900-uapi'
 manager_manifest=json.loads((ROOT/'configs/manager40900-uapi.json').read_text())
+require(manager_manifest['source_sha']==IDENTITY['manager_commit'], 'Manager header snapshot differs from locked source')
 for name,expected in manager_manifest['sha256'].items():
  require(hashlib.sha256((MANAGER/name).read_bytes()).hexdigest()==expected, ('Manager header changed',name))
 require(MANAGER.resolve()!=KERNEL.resolve(), 'UAPI self-comparison is forbidden')
@@ -33,7 +35,7 @@ kernel_only_constants=names[0][0]-names[1][0]
 manager_only_constants=names[1][0]-names[0][0]
 kernel_only_types=names[0][1]-names[1][1]
 manager_only_types=names[1][1]-names[0][1]
-# No Manager40900 interface may be silently missing in this release.
+# No locked Manager interface may be silently missing in this release.
 require(not kernel_only_constants, kernel_only_constants)
 require(not kernel_only_types, kernel_only_types)
 require(not manager_only_constants, manager_only_constants)
@@ -103,5 +105,5 @@ require(arm64_outputs['kernel']==arm64_outputs['manager'], 'arm64 UAPI mismatch'
 lines=[]
 for key in sorted(outputs['kernel']):
  if 'get_info_cmd' in key or key.endswith(('VERSION','VER')) or key.startswith('sizeof.app_profile'):lines.append({key:outputs['kernel'][key]})
-result={'manager_sha':'904c60d18f026340ce38ca2d5a1da529aadcba1a','kernel_sha':'e2912817f4e1b194e582a06e0b5eacf6a3fb7083','compared_shared_ioctl_constants':sum(n.startswith('KSU_IOCTL_') for n in shared_constants),'compared_shared_wire_structures':len(shared_types),'compared_constants_sizes_offsets':len(outputs['kernel']),'shared_interfaces_all_equal':True,'all_manager_header_ioctls_present':True,'manager_only_ioctl_constants':sorted(manager_only_constants),'manager_only_structures':sorted(manager_only_types),'runtime_note':'Header presence is checked; runtime feature functionality remains untested.','kernel_and_manager_uapi':outputs['kernel']['constant.KERNEL_SU_UAPI_VERSION'],'profile_version':outputs['kernel']['constant.KSU_APP_PROFILE_VER'],'arm64_values_all_equal':True,'target':'aarch64-linux-android31','selected':lines,'header_sha256':{who:{name:hashlib.sha256(text.encode()).hexdigest() for name,text in data.items()} for who,data in headers.items()},'note':'Independent official Manager40900 header comparison; this build has no runtime authorization or feature validation claim.'}
+result={'manager_sha':IDENTITY['manager_commit'],'kernel_sha':IDENTITY['driver_commit'],'compared_shared_ioctl_constants':sum(n.startswith('KSU_IOCTL_') for n in shared_constants),'compared_shared_wire_structures':len(shared_types),'compared_constants_sizes_offsets':len(outputs['kernel']),'shared_interfaces_all_equal':True,'all_manager_header_ioctls_present':True,'manager_only_ioctl_constants':sorted(manager_only_constants),'manager_only_structures':sorted(manager_only_types),'runtime_note':'Header presence is checked; runtime feature functionality remains untested.','kernel_and_manager_uapi':outputs['kernel']['constant.KERNEL_SU_UAPI_VERSION'],'profile_version':outputs['kernel']['constant.KSU_APP_PROFILE_VER'],'arm64_values_all_equal':True,'target':'aarch64-linux-android31','selected':lines,'header_sha256':{who:{name:hashlib.sha256(text.encode()).hexdigest() for name,text in data.items()} for who,data in headers.items()},'note':'Independent official Manager header comparison; this build has no runtime authorization or feature validation claim.'}
 (D/'complete-uapi-alignment.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

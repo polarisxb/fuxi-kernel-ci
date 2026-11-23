@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and atomically publish a complete offline 40900 + SUSFS candidate."""
+"""Build and atomically publish a complete offline kernel candidate."""
 import argparse
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -54,15 +54,16 @@ def copy(source, destination):
 
 
 def dependencies(root):
+    identity = V.read_identity(root)
     return {
         'stock': root / 'inputs/stock/images/boot.img',
         'template': root / 'inputs/anykernel-template.zip',
         'baseline_exports': root / 'inputs/baseline/Module.symvers',
         'baseline_cert': root / 'inputs/baseline/signing_key.x509',
-        'apk': root / 'inputs/manager' / V.APK_NAME,
-        'manager_archive': root / 'downloads/manager-904c60d1.tar.gz',
-        'builtin_archive': root / 'downloads/builtin-e2912817f4e1.tar.gz',
-        'susfs_archive': root / 'downloads/susfs-bca0d2333c1a.tar.gz',
+        'apk': root / 'inputs/manager' / identity['apk_name'],
+        'manager_archive': root / 'upstream/archives' / identity['manager_archive'],
+        'builtin_archive': root / 'upstream/archives' / identity['builtin_archive'],
+        'susfs_archive': root / 'upstream/archives' / identity['susfs_archive'],
         'avbtool': root / 'kernel/prebuilts/kernel-build-tools/linux-x86/bin/avbtool',
         'objcopy': root / 'kernel/prebuilts/clang/host/linux-x86/clang-r450784e/bin/llvm-objcopy',
         'objcopy_runtime': root / 'kernel/prebuilts/clang/host/linux-x86/clang-r450784e/lib64/libc++.so.1',
@@ -87,12 +88,13 @@ def preflight(root, inputs):
     V.require(not missing, 'Missing/empty packaging inputs:\n' + '\n'.join(missing))
     V.require(shutil.which('git') is not None and shutil.which('openssl') is not None,
               'git and openssl are required')
-    V.require(V.sha256(inputs['apk']) == V.APK_SHA, 'Unexpected official Manager APK')
+    identity = V.read_identity(root)
+    V.require(V.sha256(inputs['apk']) == identity['apk_sha256'], 'Unexpected official Manager APK')
     V.require(V.sha256(inputs['stock']) == STOCK_SHA, 'Unexpected stock boot input')
     V.require(V.sha256(inputs['baseline_cert']) == V.sha256(out / 'certs/signing_key.x509'),
               'Build signing certificate differs from the locked baseline')
     head = V.run(['git', '-C', root / 'kernel/common', 'rev-parse', 'HEAD']).decode().strip()
-    V.require(head == V.COMMON_SHA, 'Common source is not the locked baseline')
+    V.require(head == identity['common_commit'], 'Common source is not the locked baseline')
     release = (out / 'include/config/kernel.release').read_text().strip()
     staging = root / 'out/sukisu/staging/lib/modules' / release / 'kernel'
     modules = list(staging.rglob('*.ko'))
@@ -112,16 +114,17 @@ def preflight(root, inputs):
 
 
 def package_anykernel(inputs, stage):
+    identity = V.read_identity(stage)
     records = {}
     with zipfile.ZipFile(inputs['template']) as source, zipfile.ZipFile(
-            stage / V.ZIP_NAME, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as target:
+            stage / identity['kernel_zip'], 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as target:
         for entry in source.infolist():
             data = source.read(entry)
             if entry.filename == 'Image':
                 data = (stage / 'Image').read_bytes()
             elif entry.filename == 'anykernel.sh':
                 text = re.sub(r'^kernel.string=.*$',
-                              'kernel.string=Fuxi GKI 5.15.194 - SukiSU 40900 + SUSFS 2.3.0 r2',
+                              lambda _: 'kernel.string=' + identity['kernel_string'],
                               data.decode(), flags=re.M)
                 V.require('SLOT_SELECT=active;' in text and 'BLOCK=boot;' in text,
                           'Unsafe AnyKernel template')
@@ -160,14 +163,13 @@ def package_boot(inputs, stage):
 
 
 def package_sources(root, inputs, stage):
+    identity = V.read_identity(root)
     source = stage / 'source'
     source.mkdir()
     V.run(['git', '-C', root / 'kernel/common', 'archive', '--format=tar.gz',
-           '--output=' + str(source / 'common-base.tar.gz'), V.COMMON_SHA])
-    for key, name in [('builtin_archive', 'builtin-e2912817.tar.gz'),
-                      ('susfs_archive', 'susfs-bca0d233.tar.gz'),
-                      ('manager_archive', 'manager-904c60d1.tar.gz')]:
-        copy(inputs[key], source / name)
+           '--output=' + str(source / 'common-base.tar.gz'), identity['common_commit']])
+    for key in ('builtin_archive', 'susfs_archive', 'manager_archive'):
+        copy(inputs[key], source / identity[key])
     copy(inputs['common_patch'], stage / 'source-diffs/common.diff')
     copy(inputs['ksu_patch'], stage / 'source-diffs/SukiSU.diff')
     records = {name: V.tree_manifest(root / 'kernel' / directory)
@@ -203,6 +205,7 @@ def publish(root, stage, release_id):
 
 
 def collect(root):
+    build_identity = V.read_identity(root)
     inputs = dependencies(root)
     with pipeline_lock(root):
         out, modules = preflight(root, inputs)
@@ -227,7 +230,7 @@ def collect(root):
             copy(root / 'configs/manifest.locked.xml', stage / 'manifest.locked.xml')
             copy(inputs['baseline_exports'], stage / 'reports/baseline-Module.symvers')
             copy(out / 'certs/signing_key.x509', stage / 'public-certificates/signing_key.x509')
-            copy(inputs['apk'], stage / V.APK_NAME)
+            copy(inputs['apk'], stage / build_identity['apk_name'])
             copy(inputs['susfs_tool'], stage / 'tools/ksu_susfs')
             copy(inputs['avbtool'], stage / 'verification-tools/avbtool')
             copy(inputs['objcopy'], stage / 'verification-tools/llvm-objcopy')
@@ -249,14 +252,16 @@ def collect(root):
             shutil.copytree(reports / 'offline', stage / 'reports/offline')
             for path in sorted((root / 'logs').glob('*.log')):
                 copy(path, stage / 'logs' / path.name)
-            copy(inputs['readme'], stage / 'README.zh-CN.md')
+            readme = inputs['readme'].read_text(encoding='utf-8').format_map(build_identity)
+            (stage / 'README.zh-CN.md').write_text(readme, encoding='utf-8', newline='\n')
             package_anykernel(inputs, stage)
             package_boot(inputs, stage)
             package_sources(root, inputs, stage)
             P.verify_workspace(root, out)
-            identity = {'common_sha': V.COMMON_SHA, 'builtin_sha': V.BUILTIN_SHA,
-                        'susfs_sha': V.SUSFS_SHA, 'manager_version': 40900, 'driver_version': 40900,
-                        'uapi_version': 2, 'profile_version': 4, 'susfs_version': 'v2.3.0',
+            identity = {'common_sha': build_identity['common_commit'], 'builtin_sha': build_identity['driver_commit'],
+                        'susfs_sha': build_identity['susfs_commit'], 'manager_version': build_identity['manager_version_code'],
+                        'driver_version': build_identity['driver_version'],
+                        'uapi_version': 2, 'profile_version': 4, 'susfs_version': build_identity['susfs_version'],
                         'created_at': datetime.now(timezone.utc).isoformat(),
                         'runtime_compatibility_verified': False, 'phone_operations': False}
             V.write_inventory(stage, identity)

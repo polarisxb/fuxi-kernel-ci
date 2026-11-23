@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -33,16 +34,17 @@ class ReadonlyVerificationTests(unittest.TestCase):
             for name in V.REQUIRED:
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text('fixture ' + name)
+                path.write_bytes(('fixture ' + name).encode())
             for name in ('verify-delivery.py', 'build_provenance.py', *P.BUILD_SCRIPTS):
                 shutil.copy2(ROOT / 'scripts' / name, root / 'scripts' / name)
-            (root / 'configs').mkdir()
+            build_identity = dict(V.IDENTITY, apk_sha256=V.sha256(root / V.APK_NAME))
+            (root / 'configs/build-identity.json').write_bytes(json.dumps(build_identity).encode())
             (root / 'source-diffs/integrated-source-manifest.json').write_text('{}')
             (root / 'tools/ksu_susfs').write_bytes(b'\x7fELF\x02\x01' + b'\0' * 12 + struct.pack('<H', 183))
             record = {
                 'schema_version': 1, 'status': 'complete', 'build_returncode': 0,
                 'attempt': 'isolated-fixture',
-                'inputs': {'sources': {}, 'configs': {},
+                'inputs': {'sources': {}, 'configs': V.tree_manifest(root / 'configs'),
                            'build_scripts': {name: P.file_record(root / 'scripts' / name) for name in P.BUILD_SCRIPTS},
                            'patches': {name: P.file_record(root / 'source-diffs' / published)
                                        for name, published in zip(P.PATCHES, ('common.diff', 'SukiSU.diff'))}},
@@ -51,8 +53,9 @@ class ReadonlyVerificationTests(unittest.TestCase):
             }
             (root / 'reports/build-provenance.json').write_text(json.dumps(record))
             identity = {'common_sha': V.COMMON_SHA, 'builtin_sha': V.BUILTIN_SHA,
-                        'susfs_sha': V.SUSFS_SHA, 'driver_version': 40900, 'manager_version': 40900,
-                        'uapi_version': 2, 'profile_version': 4, 'susfs_version': 'v2.3.0'}
+                        'susfs_sha': V.SUSFS_SHA, 'driver_version': V.IDENTITY['driver_version'],
+                        'manager_version': V.IDENTITY['manager_version_code'],
+                        'uapi_version': 2, 'profile_version': 4, 'susfs_version': V.IDENTITY['susfs_version']}
             V.write_inventory(root, identity)
             before = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
                       for p in root.rglob('*') if p.is_file()}
@@ -65,8 +68,7 @@ from pathlib import Path
 root = Path(sys.argv[1])
 namespace = runpy.run_path(str(root / 'scripts/verify-delivery.py'))
 globals_ = namespace['verify_delivery'].__globals__
-globals_['APK_SHA'] = hashlib.sha256((root / namespace['APK_NAME']).read_bytes()).hexdigest()
-globals_['verify_image'] = lambda root: '5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r2'
+globals_['verify_image'] = lambda root: namespace['IDENTITY']['kernel_release']
 for name in ('verify_boot', 'verify_zip', 'verify_modules', 'verify_replay'):
     globals_[name] = lambda root: True
 result = namespace['verify_delivery'](root)
@@ -77,7 +79,7 @@ print(json.dumps(result))
             environment.pop('PYTHONPYCACHEPREFIX', None)
             for attempt in (1, 2):
                 with self.subTest(attempt=attempt):
-                    result = subprocess.run(['python3', '-c', driver, str(root)], env=environment,
+                    result = subprocess.run([sys.executable, '-c', driver, str(root)], env=environment,
                                             capture_output=True, text=True, timeout=30)
                     self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                     self.assertTrue(json.loads(result.stdout)['passed'])

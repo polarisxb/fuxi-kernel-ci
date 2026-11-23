@@ -14,7 +14,7 @@ def rejects(fn,name):
  try:fn()
  except (ValueError,KeyError):passed(name)
  else:raise AssertionError('Gate did not reject: '+name)
-with tempfile.TemporaryDirectory(prefix='fuxi40900-gates-') as temp:
+with tempfile.TemporaryDirectory(prefix='fuxi-build-gates-') as temp:
  root=Path(temp)
  # A 64-byte copied ELF header used to pass the entire ELF check.
  original=ROOT/'out/sukisu/common/vmlinux'

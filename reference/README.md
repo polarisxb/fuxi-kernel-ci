@@ -13,8 +13,9 @@ SHA256。输入来自已核验的官方 OTA、固定 upstream 源码和本项目
 - 官方 Manager APK、builtin/SUSFS/Manager 的固定源码归档、配套工具与公开
   模块签名证书均带明确摘要。
 
-GitHub codeload 的 gzip 容器元数据可能随服务更新改变，即使 Git tree 未变。
-因此这里保留已验证的不可变归档，而不是每次下载动态 archive 后假设字节一致。
+当前构建使用固定提交生成 builtin、SUSFS 与 Manager 的 Git 归档。不可变输入包中的
+旧 builtin 归档仅用于迁移期间的逐文件比较。旧 SUSFS 和 Manager 归档作为历史输入保留。
+官方 Manager APK 继续来自经过摘要校验的输入包。
 
 输入包没有手机备份、用户数据、授权记录、研究日志或私钥。私钥只能存 Actions
 Secret，不能加入这些输入、Git、cache 或 Release。

@@ -301,6 +301,19 @@ def install_susfs(workspace, common, cache, mirror_root=None):
     return {"url": info["url"], "commit": info["commit"], "version": info["version"], **record}
 
 
+def write_workspace_identity(workspace, projects):
+    identity = load_helper("identity").derive(LAYOUT)
+    makefile = workspace / "kernel/common/Makefile"
+    version = Q.kernel_version(makefile.read_text(encoding="utf-8"))
+    require(version == identity["kernel_version"], f"Unexpected kernel version in Makefile: {version}")
+    identity["actual_kernel_version"] = version
+    locked = [{"path": project["path"], "sha": project["revision"],
+               "shared_readonly": project["path"] != "common"} for project in projects]
+    configs = workspace / "configs"
+    for name, record in (("build-identity.json", identity), ("locked-workspace-inputs.json", locked)):
+        (configs / name).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+
 def prepare_kernel(workspace, cache, mirror_root=None):
     projects = manifest_projects(REPO / "configs/manifest.locked.xml")
     pinned = [project["revision"] for project in projects if project["path"] == "common"]
@@ -336,6 +349,7 @@ def prepare_kernel(workspace, cache, mirror_root=None):
                            (REPO / "workspace/tests", workspace / "tests"),
                            (REPO / "module", workspace / "module")):
         copy_overlay(source, target)
+    write_workspace_identity(workspace, projects)
     (workspace / "configs/ci-source.json").write_text(json.dumps(ci_source_info(), indent=2) + "\n")
     (workspace / "reports").mkdir()
     capture_patches(workspace)

@@ -29,6 +29,29 @@ class BootstrapTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
+    def test_workspace_identity_and_project_lock(self):
+        configs = self.root / "configs"
+        configs.mkdir()
+        common = self.root / "kernel/common"
+        common.mkdir(parents=True)
+        projects = B.manifest_projects(ROOT / "configs/manifest.locked.xml")
+        version = B.LAYOUT["kernel_release"].split("-", 1)[0].split(".")
+        makefile = common / "Makefile"
+        makefile.write_bytes(("VERSION = %s\nPATCHLEVEL = %s\nSUBLEVEL = %s\nEXTRAVERSION =\n"
+                              % tuple(version)).encode())
+        B.write_workspace_identity(self.root, projects)
+        identity = json.loads((configs / "build-identity.json").read_bytes())
+        self.assertEqual(identity["actual_kernel_version"], identity["kernel_version"])
+        self.assertEqual(identity["kernel_release"], B.LAYOUT["kernel_release"])
+        entries = json.loads((configs / "locked-workspace-inputs.json").read_bytes())
+        self.assertEqual([(e["path"], e["sha"]) for e in entries],
+                         [(p["path"], p["revision"]) for p in projects])
+        self.assertIn("kernel/configs", [e["path"] for e in entries])
+        self.assertEqual([e["path"] for e in entries if not e["shared_readonly"]], ["common"])
+        makefile.write_bytes(b"VERSION = 0\nPATCHLEVEL = 0\nSUBLEVEL = 0\nEXTRAVERSION =\n")
+        with self.assertRaisesRegex(ValueError, "kernel version"):
+            B.write_workspace_identity(self.root, projects)
+
     def archive(self, members):
         path = self.root / "input.tar.gz"
         with tarfile.open(path, "w:gz") as archive:

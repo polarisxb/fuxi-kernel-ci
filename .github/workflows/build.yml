@@ -30,7 +30,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 330
     env:
-      FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
       CI_SOURCE_SHA: ${{ github.sha }}
       CI_SOURCE_REF: ${{ github.ref }}
     steps:
@@ -68,6 +67,7 @@ jobs:
       - name: Build and verify the signed kernel ZIP
         env:
           KERNEL_SIGNING_KEY_PEM: ${{ secrets.KERNEL_SIGNING_KEY_PEM }}
+          FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
         run: bash scripts/ci-build.sh --workspace "$RUNNER_TEMP/fuxi-project" --dist "$GITHUB_WORKSPACE/dist/kernel"
       - name: Upload verified kernel distribution
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -98,7 +98,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
       CI_SOURCE_SHA: ${{ github.sha }}
       CI_SOURCE_REF: ${{ github.ref }}
     steps:
@@ -115,6 +114,8 @@ jobs:
           path: ${{ runner.temp }}/fuxi-inputs
           key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json', 'src/SukiSU/Cargo.lock') }}
       - name: Build the matching ARM64 status detector
+        env:
+          FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
         run: bash scripts/build-ksud.sh --workspace "$RUNNER_TEMP/fuxi-native" --dist "$GITHUB_WORKSPACE/dist/native"
       - name: Upload verified userspace distribution
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

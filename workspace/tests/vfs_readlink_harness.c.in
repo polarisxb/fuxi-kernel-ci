@@ -1,0 +1,141 @@
+#include <assert.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define CONFIG_KSU_SUSFS_OPEN_REDIRECT 1
+#define __user
+#define likely(x) (x)
+#define unlikely(x) (x)
+#define ERR_PTR(x) ((void *)(intptr_t)(x))
+#define PTR_ERR(x) ((int)(intptr_t)(x))
+#define IS_ERR(x) ((uintptr_t)(x) >= (uintptr_t)-4095)
+#define IOP_DEFAULT_READLINK 1
+#define PAGE_SIZE 4096
+#define GFP_KERNEL 1
+#define READ_ONCE(x) (x)
+#define DEFINE_DELAYED_CALL(name) struct delayed_call name = {false}
+struct delayed_call { bool pending; };
+struct dentry;
+struct inode;
+struct inode_operations {
+    int (*readlink)(struct dentry *, char *, int);
+    const char *(*get_link)(struct dentry *, struct inode *, struct delayed_call *);
+};
+struct inode {
+    struct inode_operations *i_op;
+    int i_opflags, i_lock;
+    const char *i_link;
+    bool redirect;
+};
+struct dentry { struct inode *d_inode; };
+struct path { struct dentry *dentry; };
+static int helper_error, fallback_calls, page_allocs, page_frees, slab_frees, delayed_calls;
+static bool copy_failure, page_failure;
+static const char fake_path[] = "/masked", real_path[] = "/real-target";
+#define SUSFS_IS_INODE_OPEN_REDIRECT(i) ((i)->redirect)
+static struct inode *d_inode(struct dentry *d) { return d->d_inode; }
+static bool d_is_symlink(struct dentry *d) { (void)d; return true; }
+static void spin_lock(int *lock) { (void)lock; }
+static void spin_unlock(int *lock) { (void)lock; }
+static int copy_to_user(char *dest, const char *src, size_t size)
+{
+    if (copy_failure) return 1;
+    memcpy(dest, src, size);
+    return 0;
+}
+static void do_delayed_call(struct delayed_call *done)
+{ if (done->pending) { ++delayed_calls; done->pending = false; } }
+static unsigned long __get_free_page(int flags)
+{
+    (void)flags;
+    if (page_failure) return 0;
+    ++page_allocs;
+    void *p = calloc(1, PAGE_SIZE);
+    assert(p);
+    return (unsigned long)p;
+}
+static void free_page(unsigned long p) { ++page_frees; free((void *)p); }
+static void kfree(void *p) { ++slab_frees; free(p); }
+static char *d_path(const struct path *p, char *tmp, int size)
+{
+    (void)p;
+    ++fallback_calls;
+    char *out = tmp + size - sizeof(real_path);
+    memcpy(out, real_path, sizeof(real_path));
+    return out;
+}
+static int susfs_open_redirect_spoof_do_proc_readlink(struct inode *i, char *tmp, int capacity)
+{
+    (void)i;
+    assert(capacity == PAGE_SIZE);
+    if (helper_error) return helper_error;
+    memcpy(tmp, fake_path, sizeof(fake_path));
+    return strlen(fake_path);
+}
+static int susfs_open_redirect_spoof_vfs_readlink(struct inode *i, char *buffer, int buflen)
+{
+    (void)i;
+    if (helper_error) return helper_error;
+    int len = strlen(fake_path);
+    if (len > buflen) len = buflen;
+    if (copy_to_user(buffer, fake_path, len)) return -EFAULT;
+    return len;
+}
+static int original_readlink(struct dentry *d, char *buffer, int size)
+{
+    (void)d;
+    ++fallback_calls;
+    int len = strlen(real_path);
+    if (len > size) len = size;
+    return copy_to_user(buffer, real_path, len) ? -EFAULT : len;
+}
+static const char *original_get_link(struct dentry *d, struct inode *i, struct delayed_call *done)
+{ (void)d; (void)i; done->pending = true; return real_path; }
+
+/* @readlink_copy@ */
+/* @vfs_readlink@ */
+/* @do_proc_readlink@ */
+
+int main(int argc, char **argv)
+{
+    assert(argc == 4);
+    const char *kind = argv[1], *test = argv[2];
+    int buflen = atoi(argv[3]);
+    struct inode_operations ops = {.get_link = original_get_link};
+    struct inode inode = {.i_op = &ops, .redirect = true};
+    struct dentry dentry = {&inode};
+    struct path path = {&dentry};
+    bool proc = !strcmp(kind, "proc");
+    if (!strcmp(kind, "custom")) ops.readlink = original_readlink;
+    else if (!strcmp(kind, "cached")) { inode.i_opflags = IOP_DEFAULT_READLINK; inode.i_link = real_path; }
+    else assert(proc || !strcmp(kind, "delayed"));
+    int expected_error = 0;
+    const char *expected = fake_path;
+    if (!strcmp(test, "fault")) { copy_failure = true; expected_error = -EFAULT; }
+    else if (!strcmp(test, "helper-error")) { helper_error = -ENAMETOOLONG; expected_error = -ENAMETOOLONG; }
+    else if (!strcmp(test, "no-rule")) { helper_error = -ENOENT; expected = real_path; }
+    else if (!strcmp(test, "unmarked")) { inode.redirect = false; expected = real_path; }
+    else if (!strcmp(test, "allocation")) { assert(proc); page_failure = true; expected_error = -ENOMEM; }
+    else assert(!strcmp(test, "success"));
+    char buffer[64];
+    memset(buffer, 'X', sizeof(buffer));
+    int result = proc ? do_proc_readlink(&path, buffer, buflen) : vfs_readlink(&dentry, buffer, buflen);
+    if (expected_error) assert(result == expected_error);
+    else {
+        int count = strlen(expected);
+        if (count > buflen) count = buflen;
+        assert(result == count);
+        assert(!memcmp(buffer, expected, count));
+        assert(buffer[count] == 'X');
+    }
+    if (expected == fake_path) assert(fallback_calls == 0);
+    else if (proc || ops.readlink) assert(fallback_calls == 1);
+    assert(page_allocs == page_frees && slab_frees == 0);
+    if (!strcmp(kind, "delayed")) assert(delayed_calls == 1);
+    printf("PASS %s/%s size=%d result=%d\n", kind, test, buflen, result);
+    return 0;
+}

@@ -1,0 +1,9 @@
+{
+  "build/kernel/build.sh": "38d4e181108d8b39e5928bf2d1d74298acb80136cb2f4be4e2099eda6c8d8b81",
+  "build/kernel/_setup_env.sh": "3107d865e57c8d22ca9cc44e7b149b47b71b44919cc71550433b9f57c2303bb9",
+  "build/kernel/build_utils.sh": "5e4c6775876c7b0a5cd8ad75723c58fad603f24c7e77d37f6a909e58232c5932",
+  "prebuilts/clang/host/linux-x86/clang-r450784e/bin/clang": "41131b03d674645836c23635a7e2ae478bd869b3b3da98204365c06610ec5438",
+  "prebuilts/clang/host/linux-x86/clang-r450784e/bin/lld": "858eaed0308ad1da1d21ff1df1616130cfe4b96f2502fd7099086f9cd48dbb41",
+  "prebuilts/clang/host/linux-x86/clang-r450784e/bin/llvm-objcopy": "611dc046eb2bb98d7ec80918355b977540399d38fca972b9d73309ab62fc5512",
+  "tools/mkbootimg/unpack_bootimg.py": "50ef727dc41402430cf68933eaf5b7c7c71d91d2cc3cf908b2ea8e6e1faa4595"
+}

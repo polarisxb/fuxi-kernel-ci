@@ -1,0 +1,10 @@
+{
+  "kernel_links": {
+    "kernel/common/drivers/kernelsu": "../../KernelSU/kernel",
+    "kernel/KernelSU/uapi": "kernel/include/uapi"
+  },
+  "manager_links": {
+    "kernel/include/uapi": "../../uapi",
+    "manager/app/src/main/cpp/uapi": "../../../../../uapi"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "repository": "polarisxb/fuxi-kernel-ci",
+  "visibility": "public",
+  "source_layout": "editable-overlay",
+  "kernel_common_sha": "f4321180a3973d19b626b3eef51871199e4e1fac",
+  "builtin_sha": "e2912817f4e1b194e582a06e0b5eacf6a3fb7083",
+  "susfs_sha": "bca0d2333c1a7d717e7278b019d7af7ba1d16005",
+  "manager_sha": "904c60d18f026340ce38ca2d5a1da529aadcba1a",
+  "kernel_release": "5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r2",
+  "lto": "full",
+  "lto_partitions": 1,
+  "lto_threads": 2,
+  "compile_jobs": 8,
+  "signing_secret_name": "KERNEL_SIGNING_KEY_PEM",
+  "artifact_strategy": "immutable-public-release-per-main-commit",
+  "source_epoch": 1776217181,
+  "source_timestamp": "Tue, 14 Apr 2026 18:39:41 -0700",
+  "source_paths": {
+    "common": "src/common",
+    "builtin": "src/KernelSU",
+    "manager": "src/SukiSU"
+  },
+  "workflow_interfaces": {
+    "kernel": "bash scripts/ci-build.sh --workspace WORK --dist DIST",
+    "native": "bash scripts/build-ksud.sh --workspace WORK --dist DIST"
+  }
+}

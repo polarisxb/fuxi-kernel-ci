@@ -1,0 +1,23 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.ps1 text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.diff text eol=lf
+*.patch text eol=lf
+*.png -text
+*.jpg -text
+*.webp -text
+*.ttf -text
+*.woff -text
+*.woff2 -text
+*.x509 -text
+*.so -text
+*.a -text
+*.o -text
+*.bin -text
+src/SukiSU/userspace/ksud/bin/** -text
+module/susfs4ksu/bin/** -text
+

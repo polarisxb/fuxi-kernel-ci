@@ -1,0 +1,23 @@
+# 固定的公开验证输入
+
+`inputs.lock.json` 引用仓库的 `inputs-v1` Release，并锁定整个压缩包和各文件
+SHA256。输入来自已核验的官方 OTA、固定 upstream 源码和本项目基线。
+
+- 原厂 OTA：`https://cdnorg.d.miui.com/OS3.0.309.0.WMCCNXM/fuxi-ota_full-OS3.0.309.0.WMCCNXM-user-16.0-4729900895.zip`。
+- 保留提取后的 boot、407 个唯一原厂模块 ELF，以及 CRC/namespace/import 的
+  原始验证索引。213 个重复路径采用 TAR hardlink，保留全部 620 路径语义。
+- 原厂模块许可证为 GPL 或 Dual BSD/GPL。CI 重新读取 ELF验证，不以旧成功
+  JSON 代替新构建兼容检查。
+- AnyKernel 模板只清空旧 Image，保留审核过的脚本/工具；新 Image 来自本次
+  实际构建。
+- 官方 Manager APK、builtin/SUSFS/Manager 的固定源码归档、配套工具与公开
+  模块签名证书均带明确摘要。
+
+GitHub codeload 的 gzip 容器元数据可能随服务更新改变，即使 Git tree 未变。
+因此这里保留已验证的不可变归档，而不是每次下载动态 archive 后假设字节一致。
+
+输入包没有手机备份、用户数据、授权记录、研究日志或私钥。私钥只能存 Actions
+Secret，不能加入这些输入、Git、cache 或 Release。
+
+`source-snapshot.json` 记录导入本仓库时的源码摘要，供与已成功刷入的 r2 基线
+比较；后续开发改变源码是允许的，CI 会为新提交重新冻结并验证来源和产物。

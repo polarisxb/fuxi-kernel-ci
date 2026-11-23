@@ -1,0 +1,2535 @@
+{
+  "schema_version": 1,
+  "url": "https://github.com/polarisxb/fuxi-kernel-ci/releases/download/inputs-v1/fuxi-ci-inputs-v1.tar.gz",
+  "sha256": "49ce3c40b62b02b8786371cc92890a4b0b92a41e39d4d4b7372fdbcbf519b2d1",
+  "bytes": 104169773,
+  "stock_unique_modules": 407,
+  "stock_module_paths": 620,
+  "files": {
+    "inputs/stock/modules/system_dlkm/lib/modules/5.15.194/kernel/drivers/block/zram/zram.ko": {
+      "bytes": 74777,
+      "sha256": "d95ad0cacb3fbf25f1084bf1ebf08adc82b062ebecaf43746c619a5bf12b7f1f"
+    },
+    "inputs/stock/modules/system_dlkm/lib/modules/5.15.194/kernel/mm/zsmalloc.ko": {
+      "bytes": 83321,
+      "sha256": "dae79ec149b526a44b770a52eea6110d04e06d1436f53018d1470bdf9ed16479"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/adsp_sleepmon.ko": {
+      "bytes": 74664,
+      "sha256": "ed61ceeb3d40449f042646670a2f20ba61179cfa120de0aef47474ae8eedc30f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/adsp_sleepmon.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/adsp_sleepmon.ko",
+      "sha256": "ed61ceeb3d40449f042646670a2f20ba61179cfa120de0aef47474ae8eedc30f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/altmode-glink.ko": {
+      "bytes": 36144,
+      "sha256": "eeba2465b8f37314e5e80d204a17d3e95cc70ddf45ebdb09deadccded9294aa5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/altmode-glink.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/altmode-glink.ko",
+      "sha256": "eeba2465b8f37314e5e80d204a17d3e95cc70ddf45ebdb09deadccded9294aa5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/arm_smmu.ko": {
+      "bytes": 371000,
+      "sha256": "3a5633b8d00b11e97749cf1fe47b183108e11942f024674aba18f0076a41d7b2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/bam_dma.ko": {
+      "bytes": 113840,
+      "sha256": "826a17a1675a8cc07654b341a997858ff01c198f5c668ea480fa9b970701efaf"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/bam_dma.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/bam_dma.ko",
+      "sha256": "826a17a1675a8cc07654b341a997858ff01c198f5c668ea480fa9b970701efaf"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/bcl_pmic5.ko": {
+      "bytes": 36928,
+      "sha256": "65d78ac160b79eff7d224228917fa9de2571d737eb0ddd61502e052f36e2bcce"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/bcl_soc.ko": {
+      "bytes": 22312,
+      "sha256": "0912fe7d5bc7caa07a74b73dba169e47028b78ddd73ff6211d99de24c2a52367"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/bcl_soc.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/bcl_soc.ko",
+      "sha256": "0912fe7d5bc7caa07a74b73dba169e47028b78ddd73ff6211d99de24c2a52367"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/binder_gki.ko": {
+      "bytes": 105360,
+      "sha256": "508e1a1877cba870be48c72b253a9467471519e6e0638393ebbea4ead69b3208"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/binder_gki.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/binder_gki.ko",
+      "sha256": "508e1a1877cba870be48c72b253a9467471519e6e0638393ebbea4ead69b3208"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/binder_prio.ko": {
+      "bytes": 78720,
+      "sha256": "983f8a14955b5bf3e1cab7b5547439eb077a2ecb7365bd48e136a6daa97b9f6c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/binder_prio.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/binder_prio.ko",
+      "sha256": "983f8a14955b5bf3e1cab7b5547439eb077a2ecb7365bd48e136a6daa97b9f6c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/block2mtd.ko": {
+      "bytes": 28976,
+      "sha256": "2ee6b8c90a4d3af75cb7ed35cdbe4457cd00a3f902de78433b71856b780e48ab"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/block2mtd.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/block2mtd.ko",
+      "sha256": "2ee6b8c90a4d3af75cb7ed35cdbe4457cd00a3f902de78433b71856b780e48ab"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/boot_stats.ko": {
+      "bytes": 14000,
+      "sha256": "249e9edea082a2d3206c28ca78edd9cdeaa02f2cd77a069eda5a62ca2fcd069c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/boot_stats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/boot_stats.ko",
+      "sha256": "249e9edea082a2d3206c28ca78edd9cdeaa02f2cd77a069eda5a62ca2fcd069c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/bootinfo.ko": {
+      "bytes": 20728,
+      "sha256": "b15448b6f994ac4293d6adb2003fedab3528d812294b3d461accc92e16054b5b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/bwmon.ko": {
+      "bytes": 90512,
+      "sha256": "12ccb8bb7c80bb5e769623ba2f367802f0196166c0b0101d4e2191c4eb9b545e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/c1dcvs_scmi.ko": {
+      "bytes": 32296,
+      "sha256": "b37ffe2799863091cfba9935be7482fa4cc8000381b1f56b648c2a924c5025ae"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/c1dcvs_vendor.ko": {
+      "bytes": 21040,
+      "sha256": "566ec718ca020e6e0d1dd7854e733bc25f892b751074968f4b59d22d41e5024e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/camcc-kalama.ko": {
+      "bytes": 201336,
+      "sha256": "e0b83088e94d43c3f8eb0e12e47383eebc2794b7bac56ed8932e32fc83a91d1f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cdsp-loader.ko": {
+      "bytes": 18528,
+      "sha256": "15af4e148b70fbff217b3f95034b189782616ca4b19ae5986d407266922f9300"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cdsp-loader.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cdsp-loader.ko",
+      "sha256": "15af4e148b70fbff217b3f95034b189782616ca4b19ae5986d407266922f9300"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cdsprm.ko": {
+      "bytes": 75936,
+      "sha256": "1364d7f57a6080bdc38705263ca61f56ae77d4b1d15bb11f86c2d7e1e3ab3f7c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cdsprm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cdsprm.ko",
+      "sha256": "1364d7f57a6080bdc38705263ca61f56ae77d4b1d15bb11f86c2d7e1e3ab3f7c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cfg80211.ko": {
+      "bytes": 2587808,
+      "sha256": "f87cb8f098fad99ae8450431135aff43db9cca573de2b2679c8f155367cc81b5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cfg80211.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cfg80211.ko",
+      "sha256": "f87cb8f098fad99ae8450431135aff43db9cca573de2b2679c8f155367cc81b5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/charger-ulog-glink.ko": {
+      "bytes": 31160,
+      "sha256": "11ae9717d957e3e8494e693dddcd701dd19137252a1d23c428142fc0e2886f41"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/charger-ulog-glink.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/charger-ulog-glink.ko",
+      "sha256": "11ae9717d957e3e8494e693dddcd701dd19137252a1d23c428142fc0e2886f41"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/chipreg.ko": {
+      "bytes": 16232,
+      "sha256": "167269721022492928c7b6f252c334d9153ab2751e0c4494b43081b8b266ec40"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/chipreg.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/chipreg.ko",
+      "sha256": "167269721022492928c7b6f252c334d9153ab2751e0c4494b43081b8b266ec40"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/clk-dummy.ko": {
+      "bytes": 18144,
+      "sha256": "96fd66b59a8e70c4c70fdbfea678cc03470b562d22549fdeba141197c1a119a6"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/clk-qcom.ko": {
+      "bytes": 453072,
+      "sha256": "6856c17abc1754cd9824b4dfd34ddc927a52da1660604eef9460faee39ddc999"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/clk-rpmh.ko": {
+      "bytes": 110672,
+      "sha256": "0289cff7d263a3bd6da4759f03b18339d49be04c6fa6c152788c0ab9609fad07"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cmd-db.ko": {
+      "bytes": 21728,
+      "sha256": "5030f84d448bf6d626535015d32bc103558138638159ba56f2da04d2bc4e209b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/core_hang_detect.ko": {
+      "bytes": 27144,
+      "sha256": "25a26a3b80a091989631b5324a0e8adbf2abf114344b9035d43ba85fbfc2386d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/core_hang_detect.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/core_hang_detect.ko",
+      "sha256": "25a26a3b80a091989631b5324a0e8adbf2abf114344b9035d43ba85fbfc2386d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-csr.ko": {
+      "bytes": 91840,
+      "sha256": "636693d988970b326537510663371de7b319696f1a78300883080f699f36b39d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-csr.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-csr.ko",
+      "sha256": "636693d988970b326537510663371de7b319696f1a78300883080f699f36b39d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-cti.ko": {
+      "bytes": 165296,
+      "sha256": "631be020074bbec717b4a6fe27555e91a1a252c49fdf44a3706b1e0355193219"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-cti.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-cti.ko",
+      "sha256": "631be020074bbec717b4a6fe27555e91a1a252c49fdf44a3706b1e0355193219"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-dummy.ko": {
+      "bytes": 71864,
+      "sha256": "fcd219f29954192b6ff34b60cc3ed3667db389dd7b39dac28de631a271d7db5a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-dummy.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-dummy.ko",
+      "sha256": "fcd219f29954192b6ff34b60cc3ed3667db389dd7b39dac28de631a271d7db5a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-funnel.ko": {
+      "bytes": 87512,
+      "sha256": "e48d6fed430fe14946a98a6a87d97ad79ab098eb590dcf02d50af726b9722ce1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-funnel.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-funnel.ko",
+      "sha256": "e48d6fed430fe14946a98a6a87d97ad79ab098eb590dcf02d50af726b9722ce1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-hwevent.ko": {
+      "bytes": 74568,
+      "sha256": "64a6ac21b0831b8f143128afbc4c2afc665b83700e137ce964c7e46c6b8540fa"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-hwevent.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-hwevent.ko",
+      "sha256": "64a6ac21b0831b8f143128afbc4c2afc665b83700e137ce964c7e46c6b8540fa"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-remote-etm.ko": {
+      "bytes": 78456,
+      "sha256": "57bef544dd4c50f0dc116c00d5e6a8a67531b11540f9c8c9e9030b8f9c9ea5ef"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-remote-etm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-remote-etm.ko",
+      "sha256": "57bef544dd4c50f0dc116c00d5e6a8a67531b11540f9c8c9e9030b8f9c9ea5ef"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-replicator.ko": {
+      "bytes": 87912,
+      "sha256": "e2db9bdae78b12b388d5c48a0271e10b835df3494d4f41e04228d9a5c5e79622"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-replicator.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-replicator.ko",
+      "sha256": "e2db9bdae78b12b388d5c48a0271e10b835df3494d4f41e04228d9a5c5e79622"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-stm.ko": {
+      "bytes": 113608,
+      "sha256": "db53c53bc8e905246020863b64beb4007becf38ddf0d9e38ab8279c3aaed6d76"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-stm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-stm.ko",
+      "sha256": "db53c53bc8e905246020863b64beb4007becf38ddf0d9e38ab8279c3aaed6d76"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-tgu.ko": {
+      "bytes": 75584,
+      "sha256": "b082f3e36da2a71fab8cffd7b0fa49d36a3b31ad7767bbe267984d2013456bbf"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-tgu.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-tgu.ko",
+      "sha256": "b082f3e36da2a71fab8cffd7b0fa49d36a3b31ad7767bbe267984d2013456bbf"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-tmc.ko": {
+      "bytes": 226232,
+      "sha256": "1bffb2c8b3e6f170d6b009954c7c55dc35f77801a323e5143d4dd009ced8484c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-tmc.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-tmc.ko",
+      "sha256": "1bffb2c8b3e6f170d6b009954c7c55dc35f77801a323e5143d4dd009ced8484c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-tpda.ko": {
+      "bytes": 86792,
+      "sha256": "901c8bfe387ec4b10212af90c558d1fe36cbf8432c0eec9d1c939aaa220dad5a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-tpda.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-tpda.ko",
+      "sha256": "901c8bfe387ec4b10212af90c558d1fe36cbf8432c0eec9d1c939aaa220dad5a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight-tpdm.ko": {
+      "bytes": 194352,
+      "sha256": "2f5f4d96b6bb050fb72af99c4fb48e5b6cdff313232e7798cb065c4681d61402"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight-tpdm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight-tpdm.ko",
+      "sha256": "2f5f4d96b6bb050fb72af99c4fb48e5b6cdff313232e7798cb065c4681d61402"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/coresight.ko": {
+      "bytes": 214328,
+      "sha256": "0756193f64c2e882214ddfdb66e79ddc83e063e2500740c12c4ea38fef6d5c64"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/coresight.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/coresight.ko",
+      "sha256": "0756193f64c2e882214ddfdb66e79ddc83e063e2500740c12c4ea38fef6d5c64"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cpq.ko": {
+      "bytes": 54392,
+      "sha256": "dd47f431c1c24df34dbebd12c9ddcff200075c2f6ae48c675fd234d8bb9789b9"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cpq.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cpq.ko",
+      "sha256": "dd47f431c1c24df34dbebd12c9ddcff200075c2f6ae48c675fd234d8bb9789b9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cpu_hotplug.ko": {
+      "bytes": 21728,
+      "sha256": "4ccf7f93558fb52aa4ed2c0025478f3157799426e2cf4659bf0b5ff82375b13f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cpu_voltage_cooling.ko": {
+      "bytes": 23296,
+      "sha256": "49a7deaf6d0653bd5de2f9175069ccf0406c0217cf6fd83be2e3ca0f0c7f368c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cpu_voltage_cooling.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cpu_voltage_cooling.ko",
+      "sha256": "49a7deaf6d0653bd5de2f9175069ccf0406c0217cf6fd83be2e3ca0f0c7f368c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cpufreq_stats_scmi.ko": {
+      "bytes": 22104,
+      "sha256": "cc08bef8f86dbf140f4e64d71c17cf25388676e33b5a17e7bb50d739cfa4eb59"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cpufreq_stats_scmi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cpufreq_stats_scmi.ko",
+      "sha256": "cc08bef8f86dbf140f4e64d71c17cf25388676e33b5a17e7bb50d739cfa4eb59"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cpufreq_stats_vendor.ko": {
+      "bytes": 15352,
+      "sha256": "a30d74556d2bfdb6a5b2b995dacc7cd56c5a54290a9312d387a2e9ad2914871d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cpufreq_stats_vendor.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/cpufreq_stats_vendor.ko",
+      "sha256": "a30d74556d2bfdb6a5b2b995dacc7cd56c5a54290a9312d387a2e9ad2914871d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/cqhci.ko": {
+      "bytes": 59936,
+      "sha256": "5fe9035140ed63ff33390384c2d145711f4161e3ecfcf8176eecf9dcf70cba53"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/crypto-qti-common.ko": {
+      "bytes": 24176,
+      "sha256": "5a94c48f491ce1be410a572ef421dc8de4ff4eb9b087916967e7d59fe5873423"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/crypto-qti-hwkm.ko": {
+      "bytes": 17840,
+      "sha256": "0ebfbff5174ac9657c2181dc3046be06942bf60590c0e19e39131d1517aa2010"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/dcc_v2.ko": {
+      "bytes": 71160,
+      "sha256": "52833be04dbd4f317a82532436fce94edcff13a5476fd32317d1e1c1a66d3f36"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/dcvs_fp.ko": {
+      "bytes": 19072,
+      "sha256": "8ea23d4cbe6cdcbd25d3f8a5830452d2a6d722bf8e3248f58d81dbfaa0b6a782"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ddr_cdev.ko": {
+      "bytes": 16344,
+      "sha256": "b1e3971887f729755d5597328000cc995e88540faaa052a59fac3c0ba1af3a0a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ddr_cdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/ddr_cdev.ko",
+      "sha256": "b1e3971887f729755d5597328000cc995e88540faaa052a59fac3c0ba1af3a0a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/debug-regulator.ko": {
+      "bytes": 110400,
+      "sha256": "a08eca81e59e7a640fc1b65482ca633562b21b09fa3be8bde4a03aeadfdfa3ce"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/debug_ext.ko": {
+      "bytes": 43232,
+      "sha256": "575830450d540787924d05e82603d48d2b92198a04c674dc777cedc11ee9ba44"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/debug_symbol.ko": {
+      "bytes": 15328,
+      "sha256": "5676a2085551ab6b918bc2904f1a730deeac962bb35d38c0b07c73621bfc76a8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/debugcc-kalama.ko": {
+      "bytes": 46768,
+      "sha256": "7932afc4aa127dc4e9f5b05675968d7e6be82e0f17be387bf2fd724827f55529"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/debugcc-kalama.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/debugcc-kalama.ko",
+      "sha256": "7932afc4aa127dc4e9f5b05675968d7e6be82e0f17be387bf2fd724827f55529"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/dispcc-kalama.ko": {
+      "bytes": 110600,
+      "sha256": "25b137bfb6fda754f3c289130da8e88c249b7e7e31491b44418dea70195ba003"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/dmesg_dumper.ko": {
+      "bytes": 31552,
+      "sha256": "ed12fa6742ead5612f9fef12ce5233b64c61b42d082d978a9b9744de971df8e2"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/dmesg_dumper.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/dmesg_dumper.ko",
+      "sha256": "ed12fa6742ead5612f9fef12ce5233b64c61b42d082d978a9b9744de971df8e2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/dump_display.ko": {
+      "bytes": 14592,
+      "sha256": "a5232486e7f99343e0534fc55bf5bf271f69042fae7b9d68efbbb8f3610a29d2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/dwc3-msm.ko": {
+      "bytes": 222152,
+      "sha256": "fc66cde254fd80de5936f33e5451bd42f69272f69225036fc6dafff7141eeff7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/dwc3-msm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/dwc3-msm.ko",
+      "sha256": "fc66cde254fd80de5936f33e5451bd42f69272f69225036fc6dafff7141eeff7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ehset.ko": {
+      "bytes": 14176,
+      "sha256": "926728edcb92ddeffb0e73e784d7acfccdc74c5e4b7ccde3d230a464eaccde7e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ehset.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/ehset.ko",
+      "sha256": "926728edcb92ddeffb0e73e784d7acfccdc74c5e4b7ccde3d230a464eaccde7e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/eud.ko": {
+      "bytes": 37912,
+      "sha256": "ca8667632b6fb810c918e40b37402942b147d0df1cd60e843c9a09761789c78f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/eud.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/eud.ko",
+      "sha256": "ca8667632b6fb810c918e40b37402942b147d0df1cd60e843c9a09761789c78f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/f_fs_ipc_log.ko": {
+      "bytes": 94760,
+      "sha256": "c80fb61ce033644d3fe16a13adb5367a2c380c272b3da75820cfaf0ee6b932c7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/f_fs_ipc_log.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/f_fs_ipc_log.ko",
+      "sha256": "c80fb61ce033644d3fe16a13adb5367a2c380c272b3da75820cfaf0ee6b932c7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/fpc1555.ko": {
+      "bytes": 59320,
+      "sha256": "a0d58b8661c3940aa204ef49fa8774a2694027c0400d52595120d05bb7b7b230"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/fpc1555.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/fpc1555.ko",
+      "sha256": "a0d58b8661c3940aa204ef49fa8774a2694027c0400d52595120d05bb7b7b230"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/frpc-adsprpc.ko": {
+      "bytes": 715672,
+      "sha256": "6231f35f84bb8bb051c2f53c54c527b9c58446bd0912c1a49f79ff7e1b29b604"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/frpc-adsprpc.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/frpc-adsprpc.ko",
+      "sha256": "6231f35f84bb8bb051c2f53c54c527b9c58446bd0912c1a49f79ff7e1b29b604"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/fsa4480-i2c.ko": {
+      "bytes": 31480,
+      "sha256": "627755df91ac3b514f899d1ed29114d2ad2a2e604bafbea05b9cf1c09cc6e025"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/fsa4480-i2c.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/fsa4480-i2c.ko",
+      "sha256": "627755df91ac3b514f899d1ed29114d2ad2a2e604bafbea05b9cf1c09cc6e025"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gcc-kalama.ko": {
+      "bytes": 184616,
+      "sha256": "d4533b447219e62dcc5129fef99f87847b3526b829fcc4f4346d61f510e13aa1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gdsc-regulator.ko": {
+      "bytes": 109312,
+      "sha256": "73b2e51fde9dde965f828189477786c3017afa7fb1b295e2ac45c94cd397c31d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_arm_drv.ko": {
+      "bytes": 16448,
+      "sha256": "829197f34a62f5037f80686f349e3881f616471571358175b2a591164025260d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_ctrl.ko": {
+      "bytes": 25696,
+      "sha256": "38ec72758604ba6c9dcda19c57c09ac94745ff21db49cace65c16f111b5c5ecb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_dbl.ko": {
+      "bytes": 31184,
+      "sha256": "9beb2a57e6a01697113e2b0e4611419e40539a7b1fa65fd1626c996d020f101d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_irq_lend.ko": {
+      "bytes": 29152,
+      "sha256": "43ba85ae1a6f30cae9a77ab0a10f41221222ffab538d966a3ace20b3765fad8a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/gh_irq_lend.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/gh_irq_lend.ko",
+      "sha256": "43ba85ae1a6f30cae9a77ab0a10f41221222ffab538d966a3ace20b3765fad8a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_mem_notifier.ko": {
+      "bytes": 16568,
+      "sha256": "ed80f6bda1ab1a1f3770681cb8ff778df476709438b5f6d76bfa8f061ab587a9"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/gh_mem_notifier.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/gh_mem_notifier.ko",
+      "sha256": "ed80f6bda1ab1a1f3770681cb8ff778df476709438b5f6d76bfa8f061ab587a9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_msgq.ko": {
+      "bytes": 32680,
+      "sha256": "7038b4b708f09311acff62bc7bff75d26afa5b4b72a592463d5524901d7bf4a0"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_rm_drv.ko": {
+      "bytes": 243128,
+      "sha256": "99096a2326253de2e71c063b41f65971b5adc7b175b991f941d4b719568706d8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_tlmm_vm_mem_access.ko": {
+      "bytes": 23952,
+      "sha256": "0c88920dbfa3e2f21f8c2ee7a42ce8abed6c18d270e2831683a8e8918c3fbb1d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/gh_tlmm_vm_mem_access.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/gh_tlmm_vm_mem_access.ko",
+      "sha256": "0c88920dbfa3e2f21f8c2ee7a42ce8abed6c18d270e2831683a8e8918c3fbb1d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gh_virt_wdt.ko": {
+      "bytes": 20096,
+      "sha256": "ec4afad9feb95b16824fc8c9e697158bbb90ba4e23637a13c935ef5be56d5048"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/glink_pkt.ko": {
+      "bytes": 78600,
+      "sha256": "c526adf3c7bea75773979d34e840bfbbc3718fdca55e372a76fa04d9134c0167"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/glink_pkt.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/glink_pkt.ko",
+      "sha256": "c526adf3c7bea75773979d34e840bfbbc3718fdca55e372a76fa04d9134c0167"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/glink_probe.ko": {
+      "bytes": 24888,
+      "sha256": "465383bc8256766ebede39b516e5b2dec96ecae75a56d67af4bc9e638c474ed7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/glink_probe.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/glink_probe.ko",
+      "sha256": "465383bc8256766ebede39b516e5b2dec96ecae75a56d67af4bc9e638c474ed7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/goodix_fod.ko": {
+      "bytes": 134736,
+      "sha256": "8e0d09c146a4ebee7afabd3c7501a1847db865da14ec368c8a6bbb17e3f64be5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/goodix_fod.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/goodix_fod.ko",
+      "sha256": "8e0d09c146a4ebee7afabd3c7501a1847db865da14ec368c8a6bbb17e3f64be5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gpucc-kalama.ko": {
+      "bytes": 43424,
+      "sha256": "3bdb5eef9e6bd1333f9fdfd8f8a02fc14c03d21858e4299fd55a9aff8bd732e6"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/gpucc-kalama.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/gpucc-kalama.ko",
+      "sha256": "3bdb5eef9e6bd1333f9fdfd8f8a02fc14c03d21858e4299fd55a9aff8bd732e6"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/gunyah.ko": {
+      "bytes": 234448,
+      "sha256": "529d93a24f5dc19de8c9121a16b6a724f3b2cdf14f58609840bffa97196f849f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/hdcp_qseecom_dlkm.ko": {
+      "bytes": 56968,
+      "sha256": "2f33e9a87d04d703d7706da4b4c4f35f8764637c214420ff055a2753aa1469c3"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/hdcp_qseecom_dlkm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/hdcp_qseecom_dlkm.ko",
+      "sha256": "2f33e9a87d04d703d7706da4b4c4f35f8764637c214420ff055a2753aa1469c3"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/heap_mem_ext_v01.ko": {
+      "bytes": 13824,
+      "sha256": "f8bf74c878353bdc94b5716d2a0fc8a05e8fa828ddd792a4cbba11071e63fbeb"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/heap_mem_ext_v01.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/heap_mem_ext_v01.ko",
+      "sha256": "f8bf74c878353bdc94b5716d2a0fc8a05e8fa828ddd792a4cbba11071e63fbeb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/hid-xbox_haptics-mi.ko": {
+      "bytes": 19232,
+      "sha256": "c3b479fc237b10468de7a2dc17608c108984bc05b6db411c1e1834e59c2b725d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/hid-xbox_haptics-mi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/hid-xbox_haptics-mi.ko",
+      "sha256": "c3b479fc237b10468de7a2dc17608c108984bc05b6db411c1e1834e59c2b725d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/hung_task_enh.ko": {
+      "bytes": 20544,
+      "sha256": "e5662e871a8274c93287e1557a187d55a98287bb24fdd742adac02f708c3ab7f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/hung_task_enh.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/hung_task_enh.ko",
+      "sha256": "e5662e871a8274c93287e1557a187d55a98287bb24fdd742adac02f708c3ab7f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/hvc_gunyah.ko": {
+      "bytes": 22720,
+      "sha256": "0753f1262709338c96a1491a1fd41b8a02cf86935985952410292f8b6dfa981c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/hvc_gunyah.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/hvc_gunyah.ko",
+      "sha256": "0753f1262709338c96a1491a1fd41b8a02cf86935985952410292f8b6dfa981c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/hwid.ko": {
+      "bytes": 24672,
+      "sha256": "da7ba04c72554a296cab4490553ac10478e111b664f019291923360aef3683b7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/hwkm.ko": {
+      "bytes": 19960,
+      "sha256": "f8ae6e076aab0eba3ed0f91cc82603c379b7e4f812a5cf6c9040bf81a14ef7aa"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/i2c-msm-geni.ko": {
+      "bytes": 161136,
+      "sha256": "3ff0045e604bcc1f7ec577ca801c12e8c4d1c68bf6b42a1675ad39bfcd732ae5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/i2c-msm-geni.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/i2c-msm-geni.ko",
+      "sha256": "3ff0045e604bcc1f7ec577ca801c12e8c4d1c68bf6b42a1675ad39bfcd732ae5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/i3c-master-msm-geni.ko": {
+      "bytes": 176096,
+      "sha256": "8d272cefcaf38ffcb44a65a848cdb9877fb22237279e7692692cdd32a56474b4"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/i3c-master-msm-geni.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/i3c-master-msm-geni.ko",
+      "sha256": "8d272cefcaf38ffcb44a65a848cdb9877fb22237279e7692692cdd32a56474b4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/icc-bcm-voter.ko": {
+      "bytes": 75056,
+      "sha256": "30fab6d73b9eb9e0124295b09803d6af30fd7cd084fd822861a6a148993970f2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/icc-debug.ko": {
+      "bytes": 60288,
+      "sha256": "2db6cd84024c392bed11120174b71fa840e6c9459e780e8866ad67dad0f13022"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/icc-rpmh.ko": {
+      "bytes": 31280,
+      "sha256": "baa7f358904a4b47c9bf91cfe41348468d983edac10829104dc006cf0f5b8118"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/icc-test.ko": {
+      "bytes": 15768,
+      "sha256": "672cbe100f85e3746103035f567e63997a64c6de1508ae420509d0fbfb1b2d6a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/icc-test.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/icc-test.ko",
+      "sha256": "672cbe100f85e3746103035f567e63997a64c6de1508ae420509d0fbfb1b2d6a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/industrialio-buffer-cb.ko": {
+      "bytes": 19304,
+      "sha256": "a12c7fcb44a404ccf99d63e41f6bbeb9afbceddee094d4951f4feb9d34c2ab58"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/industrialio-buffer-cb.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/industrialio-buffer-cb.ko",
+      "sha256": "a12c7fcb44a404ccf99d63e41f6bbeb9afbceddee094d4951f4feb9d34c2ab58"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/iommu-logger.ko": {
+      "bytes": 14152,
+      "sha256": "a41e8cde1a217841b3ca639ad39a9a582fb88243883cc29bf396d5aa33209cf0"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ipa_fmwk.ko": {
+      "bytes": 396096,
+      "sha256": "a3d9566268948f9cc568cd668929fdc4b95011e9d787e8d355a3062aec457ab3"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ipa_fmwk.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/ipa_fmwk.ko",
+      "sha256": "a3d9566268948f9cc568cd668929fdc4b95011e9d787e8d355a3062aec457ab3"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ir-spi.ko": {
+      "bytes": 25464,
+      "sha256": "97bbf9c474654dc9884fb1ed924b4e07eeb6de8b57dd184d5e9c4d8dbae88637"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ir-spi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/ir-spi.ko",
+      "sha256": "97bbf9c474654dc9884fb1ed924b4e07eeb6de8b57dd184d5e9c4d8dbae88637"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/kunit.ko": {
+      "bytes": 76928,
+      "sha256": "517e150678eaf060d61944ebd6aaea98d9635ec929063a15f4ec5a375a6a9f9f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/kunit.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/kunit.ko",
+      "sha256": "517e150678eaf060d61944ebd6aaea98d9635ec929063a15f4ec5a375a6a9f9f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/leds-qti-flash.ko": {
+      "bytes": 64480,
+      "sha256": "95d026bad2b4f7cbc03fa040fac9139b75f118b5360fa4f7f910aaf4b43664cd"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/leds-qti-flash.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/leds-qti-flash.ko",
+      "sha256": "95d026bad2b4f7cbc03fa040fac9139b75f118b5360fa4f7f910aaf4b43664cd"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/leds-qti-tri-led.ko": {
+      "bytes": 25640,
+      "sha256": "fa81a0746b85caf150ff16682953f0dee66fe4b9f16d01a07081de9f92ab737d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/leds-qti-tri-led.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/leds-qti-tri-led.ko",
+      "sha256": "fa81a0746b85caf150ff16682953f0dee66fe4b9f16d01a07081de9f92ab737d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/llcc-qcom.ko": {
+      "bytes": 55536,
+      "sha256": "f58b92953623366d5efd3c7869553e20c3d2c16bd92e7b566054db488bd0e58c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/llcc_perfmon.ko": {
+      "bytes": 55432,
+      "sha256": "7c9588badbfbf23f8b5aca5cdf3cb75c37d86f689279eee3518f34da897824c8"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/llcc_perfmon.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/llcc_perfmon.ko",
+      "sha256": "7c9588badbfbf23f8b5aca5cdf3cb75c37d86f689279eee3518f34da897824c8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/low_free_memory_kill.ko": {
+      "bytes": 25856,
+      "sha256": "01788aeef6ae65b94b2b151a0df8ca39ee6de69860d929c77e77b61eabb27617"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/lt9611uxc.ko": {
+      "bytes": 84208,
+      "sha256": "78d3842238d55f617690399854124a66c1f24ddbe916b20624bfae3737d00a12"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lt9611uxc.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/lt9611uxc.ko",
+      "sha256": "78d3842238d55f617690399854124a66c1f24ddbe916b20624bfae3737d00a12"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mac80211.ko": {
+      "bytes": 2348600,
+      "sha256": "9410866d68f5dcf29406e478c7fd9c8f6fc7cb7dd06ea448f1217ed7fdf2abfc"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mac80211.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mac80211.ko",
+      "sha256": "9410866d68f5dcf29406e478c7fd9c8f6fc7cb7dd06ea448f1217ed7fdf2abfc"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/max31760_fan.ko": {
+      "bytes": 29864,
+      "sha256": "279eacb9817bda3aa890aade27781070e8b01afac6902a118b3f100b05f9dab8"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/max31760_fan.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/max31760_fan.ko",
+      "sha256": "279eacb9817bda3aa890aade27781070e8b01afac6902a118b3f100b05f9dab8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mdt_loader.ko": {
+      "bytes": 20520,
+      "sha256": "a0e893899cacba54ce97f2d72c50a6f35d2c6a2db5bc9080773326882eb7f93b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mem-hooks.ko": {
+      "bytes": 17936,
+      "sha256": "909d1938d053af502c5c2b7fa10db2ff8658e7324fe03a4dfe9cd0d25a0790cd"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mem-offline.ko": {
+      "bytes": 71976,
+      "sha256": "c52ccb9f448d596da7f9e90606e5ec003430e07d84c19ec99884f5b421d3b480"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mem_buf.ko": {
+      "bytes": 74200,
+      "sha256": "6161c36ab97486e07d3b53f1a84839bfad0ada03b0ea4897de748e4b562ae2a2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mem_buf_dev.ko": {
+      "bytes": 211256,
+      "sha256": "26b6fec11d23fb6a5849433e8d12f5379268fe48292a9093301905520ed72e2d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mem_buf_msgq.ko": {
+      "bytes": 33848,
+      "sha256": "679dfc1b6765b72fff86cb10d358a112446a05fa250aa55b37d8bef0b63206de"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/memlat.ko": {
+      "bytes": 97920,
+      "sha256": "3631ed7a6ce7f59ab5316bbc286f932cc415d67a989f3d03a8d43fb7c39f0740"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/memlat.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/memlat.ko",
+      "sha256": "3631ed7a6ce7f59ab5316bbc286f932cc415d67a989f3d03a8d43fb7c39f0740"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/memlat_scmi.ko": {
+      "bytes": 11936,
+      "sha256": "4f7ff5ef0bd5ff8cd644011105e1e0a0e38866471d9472b5ab72b8c2624c6d46"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/memlat_scmi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/memlat_scmi.ko",
+      "sha256": "4f7ff5ef0bd5ff8cd644011105e1e0a0e38866471d9472b5ab72b8c2624c6d46"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/memlat_vendor.ko": {
+      "bytes": 34040,
+      "sha256": "fe30b0f0c212efb1802ac7d9dd9e2108cd01adce2fe99d10fd2a863cfa161685"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/memlat_vendor.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/memlat_vendor.ko",
+      "sha256": "fe30b0f0c212efb1802ac7d9dd9e2108cd01adce2fe99d10fd2a863cfa161685"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/memory_dump_v2.ko": {
+      "bytes": 41224,
+      "sha256": "54b27e1b6dd075ca2199ac495708978f78619971eca5d59d476349baa2fcdeb8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/metis.ko": {
+      "bytes": 391032,
+      "sha256": "66627794c1f77bf54c31b921e93a65acff3658faffc19c26fe54e1d7f8bf99cb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mhi.ko": {
+      "bytes": 278768,
+      "sha256": "7d488821f159b78535472cac85e89519a84f88eff0d1a16dcc1d513cf8e35689"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mhi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mhi.ko",
+      "sha256": "7d488821f159b78535472cac85e89519a84f88eff0d1a16dcc1d513cf8e35689"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mhi_cntrl_qcom.ko": {
+      "bytes": 94144,
+      "sha256": "29b4c5ecf28a9835b33f919e8d076d1a23dfe0891ebb88b86f8cafb9ba537be5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mhi_cntrl_qcom.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mhi_cntrl_qcom.ko",
+      "sha256": "29b4c5ecf28a9835b33f919e8d076d1a23dfe0891ebb88b86f8cafb9ba537be5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_dtr.ko": {
+      "bytes": 28480,
+      "sha256": "5e41e54de0cd0055bfe24e0e49723537531d3c0c8c01b53fa9ce3cf03940ec9d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mhi_dev_dtr.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_dtr.ko",
+      "sha256": "5e41e54de0cd0055bfe24e0e49723537531d3c0c8c01b53fa9ce3cf03940ec9d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_netdev.ko": {
+      "bytes": 122136,
+      "sha256": "25fd3e5740c2df1dbcb5d79a8b0d446b9b3c6d43d21f8a707707bf3d9acda7d2"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mhi_dev_netdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_netdev.ko",
+      "sha256": "25fd3e5740c2df1dbcb5d79a8b0d446b9b3c6d43d21f8a707707bf3d9acda7d2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_satellite.ko": {
+      "bytes": 49568,
+      "sha256": "38b28f2155225280538994a2714d218d6bc0fcb4960d0cfdff1feb2c147734f1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mhi_dev_satellite.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_satellite.ko",
+      "sha256": "38b28f2155225280538994a2714d218d6bc0fcb4960d0cfdff1feb2c147734f1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_uci.ko": {
+      "bytes": 52648,
+      "sha256": "def7d8999f122f7d5875001b90617e5e30d41dd56c2672c3b640807b0685740f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mhi_dev_uci.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mhi_dev_uci.ko",
+      "sha256": "def7d8999f122f7d5875001b90617e5e30d41dd56c2672c3b640807b0685740f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_cnss_statistic.ko": {
+      "bytes": 56176,
+      "sha256": "58d9856504b0710567aa74f64923caccb2c3e0bf685b26bf7f50bfd1ddaf09fe"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mi_cnss_statistic.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mi_cnss_statistic.ko",
+      "sha256": "58d9856504b0710567aa74f64923caccb2c3e0bf685b26bf7f50bfd1ddaf09fe"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_exception_log.ko": {
+      "bytes": 22944,
+      "sha256": "e16bc387b7caf76b2b455280461b7ce267bfea9c7a8b2726c805ff6c6a44e954"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mi_exception_log.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mi_exception_log.ko",
+      "sha256": "e16bc387b7caf76b2b455280461b7ce267bfea9c7a8b2726c805ff6c6a44e954"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_freqwdg.ko": {
+      "bytes": 34104,
+      "sha256": "65f8ddf4f8f2eba19eec4cb73707dd2c6695417d531c031dc181576105099dae"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mi_freqwdg.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mi_freqwdg.ko",
+      "sha256": "65f8ddf4f8f2eba19eec4cb73707dd2c6695417d531c031dc181576105099dae"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_log.ko": {
+      "bytes": 90296,
+      "sha256": "168d20b768d4222513ace80306d9692ed8561e3883ca164e8c47e98ef1917fef"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mi_log.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mi_log.ko",
+      "sha256": "168d20b768d4222513ace80306d9692ed8561e3883ca164e8c47e98ef1917fef"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_memory.ko": {
+      "bytes": 65240,
+      "sha256": "1b6fe3811d60f364accfa310d434f1af7b9a5ecee41095ae25556303f104beed"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_mempool.ko": {
+      "bytes": 58824,
+      "sha256": "cbcd75309bb1dcfc723d24952e0be7ba29589d8fb4dc8d7d72c2d7d674789bb1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mi_mempool.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mi_mempool.ko",
+      "sha256": "cbcd75309bb1dcfc723d24952e0be7ba29589d8fb4dc8d7d72c2d7d674789bb1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_power.ko": {
+      "bytes": 117680,
+      "sha256": "4b415c1574a6bb4232bb691dbe3ae8643f9a9b145ec692a5fdcb9ed7d5f8fa17"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_schedule.ko": {
+      "bytes": 153856,
+      "sha256": "b9a9a8e29fb6350d41e9066da9b32231af6e9d45e6367454f0abe920c80a9578"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mi_thermal_interface.ko": {
+      "bytes": 118640,
+      "sha256": "c00b5128fcb4db995f1ec6dd7c1cb11346f90a941d1498b9c20f464c0b16f420"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mi_thermal_interface.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mi_thermal_interface.ko",
+      "sha256": "c00b5128fcb4db995f1ec6dd7c1cb11346f90a941d1498b9c20f464c0b16f420"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/microdump_collector.ko": {
+      "bytes": 22504,
+      "sha256": "c15ebab3b14f6e77aea3f6c4369c970f80b86e17511b1ffc623840b9b74d404c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/microdump_collector.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/microdump_collector.ko",
+      "sha256": "c15ebab3b14f6e77aea3f6c4369c970f80b86e17511b1ffc623840b9b74d404c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/miev.ko": {
+      "bytes": 40736,
+      "sha256": "557270ffdcd019eddd487f3ff26f806d67ae3c15d66717fbd39fc3f1c8559d6b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/migt.ko": {
+      "bytes": 340728,
+      "sha256": "398316f1a0b2111c163dfc3ea6eb1ceddeee3e9ac15a6d8eb95c905b2c8f2928"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/migt.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/migt.ko",
+      "sha256": "398316f1a0b2111c163dfc3ea6eb1ceddeee3e9ac15a6d8eb95c905b2c8f2928"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/millet_binder.ko": {
+      "bytes": 109768,
+      "sha256": "f4f0ac0987e1605a5ca6e2efdec954b39c942c0a6efa88842c778c6b64c13f17"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/millet_binder.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/millet_binder.ko",
+      "sha256": "f4f0ac0987e1605a5ca6e2efdec954b39c942c0a6efa88842c778c6b64c13f17"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/millet_core.ko": {
+      "bytes": 120880,
+      "sha256": "73c2c4ab65a48087e5757d2de1e926fbcc27def9b3b1b32fb8c1d63f48dd0bf4"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/millet_core.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/millet_core.ko",
+      "sha256": "73c2c4ab65a48087e5757d2de1e926fbcc27def9b3b1b32fb8c1d63f48dd0bf4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/millet_hs.ko": {
+      "bytes": 94288,
+      "sha256": "ad0a96e2e0ed072ee2fa3599de80e50499ab8fe1ee16e75f83f86c5f6c890013"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/millet_hs.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/millet_hs.ko",
+      "sha256": "ad0a96e2e0ed072ee2fa3599de80e50499ab8fe1ee16e75f83f86c5f6c890013"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/millet_oem_cgroup.ko": {
+      "bytes": 94224,
+      "sha256": "cca2c1bfe8b86c6cb996e5554af349f4089d17d5ea9af5eb68185d57eece04e1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/millet_oem_cgroup.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/millet_oem_cgroup.ko",
+      "sha256": "cca2c1bfe8b86c6cb996e5554af349f4089d17d5ea9af5eb68185d57eece04e1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/millet_pkg.ko": {
+      "bytes": 105888,
+      "sha256": "9fb113b2040f913ca40332a4226391d872afc575e2ae1d2f640920095c2dc7b2"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/millet_pkg.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/millet_pkg.ko",
+      "sha256": "9fb113b2040f913ca40332a4226391d872afc575e2ae1d2f640920095c2dc7b2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/millet_sig.ko": {
+      "bytes": 96192,
+      "sha256": "ca247a14a4c954895d3d490536ed5ba4a5f75bf33737cd7662f53c1c27e674d6"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/millet_sig.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/millet_sig.ko",
+      "sha256": "ca247a14a4c954895d3d490536ed5ba4a5f75bf33737cd7662f53c1c27e674d6"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/minidump.ko": {
+      "bytes": 230624,
+      "sha256": "149140e38581cb025b7326bfe128bb6a016851738eaa37727b081e54a909a642"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm-mmrm.ko": {
+      "bytes": 98224,
+      "sha256": "ccdd9dfbd2faa9e886306e0ed617a99c42063102304bd1c75844ba79ff620af4"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm-mmrm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm-mmrm.ko",
+      "sha256": "ccdd9dfbd2faa9e886306e0ed617a99c42063102304bd1c75844ba79ff620af4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_dma_iommu_mapping.ko": {
+      "bytes": 28056,
+      "sha256": "de84cda7e1a181d1260305a65d1e0ef08cccefbce5170be7c10d82021407f6e8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_drm.ko": {
+      "bytes": 5936344,
+      "sha256": "86dd52862108c22fdf9469d6e512358c8b62026300d0644cf0f68c0e5e07c11a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_drm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_drm.ko",
+      "sha256": "86dd52862108c22fdf9469d6e512358c8b62026300d0644cf0f68c0e5e07c11a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_ext_display.ko": {
+      "bytes": 26984,
+      "sha256": "d40bb03fbfbc62dd51b4a4b58e6136ec185ff294f03752cf2082567be2cec686"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_ext_display.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_ext_display.ko",
+      "sha256": "d40bb03fbfbc62dd51b4a4b58e6136ec185ff294f03752cf2082567be2cec686"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_geni_serial.ko": {
+      "bytes": 246736,
+      "sha256": "1c1d1237bb123b88e81b171928ef37251d6463dd0b24e6ea63afdf7e36ee06f0"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_geni_serial.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_geni_serial.ko",
+      "sha256": "1c1d1237bb123b88e81b171928ef37251d6463dd0b24e6ea63afdf7e36ee06f0"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_gpi.ko": {
+      "bytes": 115064,
+      "sha256": "9e7c0806009e1141222063e4fd1d9713b54c94a677e7ee0ee85a4fe3f832617b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_gpi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_gpi.ko",
+      "sha256": "9e7c0806009e1141222063e4fd1d9713b54c94a677e7ee0ee85a4fe3f832617b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_hw_fence.ko": {
+      "bytes": 235792,
+      "sha256": "c72ec9946959ec53170c8b5ee6a2486dc0565d19e2747944dfdff5dbbc12a171"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_hw_fence.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_hw_fence.ko",
+      "sha256": "c72ec9946959ec53170c8b5ee6a2486dc0565d19e2747944dfdff5dbbc12a171"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_lmh_dcvs.ko": {
+      "bytes": 27520,
+      "sha256": "e4d245ed525a7b5d297afdfe8a4bccc89f98a413faa4969ec9b0b93013949483"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_lmh_dcvs.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_lmh_dcvs.ko",
+      "sha256": "e4d245ed525a7b5d297afdfe8a4bccc89f98a413faa4969ec9b0b93013949483"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_memshare.ko": {
+      "bytes": 48128,
+      "sha256": "5c01d0297e84a02fee762f3b8bf5cd28bff182c76ee4a61a585613733e92a4f5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_memshare.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_memshare.ko",
+      "sha256": "5c01d0297e84a02fee762f3b8bf5cd28bff182c76ee4a61a585613733e92a4f5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_performance.ko": {
+      "bytes": 90864,
+      "sha256": "cfa0f7a734206a60234e886fe1f7693e59e86b8ed8de6d4f59258c31c5fa1362"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_performance.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_performance.ko",
+      "sha256": "cfa0f7a734206a60234e886fe1f7693e59e86b8ed8de6d4f59258c31c5fa1362"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_qmp.ko": {
+      "bytes": 49968,
+      "sha256": "21a2070830feb668286267f5d70446ab31640101399e9046e7df09af27a3f9bc"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_sharedmem.ko": {
+      "bytes": 16832,
+      "sha256": "dcb2761902aa4f20d6bd3b25589d18470b3001e8e40107fde5d9fd08a8b4a04c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_sharedmem.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_sharedmem.ko",
+      "sha256": "dcb2761902aa4f20d6bd3b25589d18470b3001e8e40107fde5d9fd08a8b4a04c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_show_epoch.ko": {
+      "bytes": 11424,
+      "sha256": "dae6bcc6fbd0228b84ec3586699b50395a747b3ca8f528e3bd32160eeb8694a0"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_show_epoch.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_show_epoch.ko",
+      "sha256": "dae6bcc6fbd0228b84ec3586699b50395a747b3ca8f528e3bd32160eeb8694a0"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_show_resume_irq.ko": {
+      "bytes": 22480,
+      "sha256": "4b1256ebee730759b048b75045653ac01f13aa5842cef972b394cc3f1cc43ec8"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_show_resume_irq.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_show_resume_irq.ko",
+      "sha256": "4b1256ebee730759b048b75045653ac01f13aa5842cef972b394cc3f1cc43ec8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/msm_sysstats.ko": {
+      "bytes": 101704,
+      "sha256": "a081fdd17bcc10ce77ce12ead810b27ef9e2082d34180526cd44972d0ebe6807"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_sysstats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/msm_sysstats.ko",
+      "sha256": "a081fdd17bcc10ce77ce12ead810b27ef9e2082d34180526cd44972d0ebe6807"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mtd.ko": {
+      "bytes": 185656,
+      "sha256": "c7ad15a2d7da10365805c6561864aab0677a6fc98b1f64f5b329bc271b89d11e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mtd.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mtd.ko",
+      "sha256": "c7ad15a2d7da10365805c6561864aab0677a6fc98b1f64f5b329bc271b89d11e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mtd_blkdevs.ko": {
+      "bytes": 36440,
+      "sha256": "aad3b39aabbe697bc5532d2e1195a7c2d118f733f3cf2c753874390652a81091"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mtd_blkdevs.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mtd_blkdevs.ko",
+      "sha256": "aad3b39aabbe697bc5532d2e1195a7c2d118f733f3cf2c753874390652a81091"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mtdblock.ko": {
+      "bytes": 20104,
+      "sha256": "afcb669ae28cbeb6652700b86f8f7a621e79ba14576f62dcd402db2aacc82011"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mtdblock.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mtdblock.ko",
+      "sha256": "afcb669ae28cbeb6652700b86f8f7a621e79ba14576f62dcd402db2aacc82011"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/mtdoops.ko": {
+      "bytes": 40080,
+      "sha256": "5b93890b8b92488f3e0cc54694d0a6e17caa4d42bc6410ba99cef75b829401dd"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mtdoops.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/mtdoops.ko",
+      "sha256": "5b93890b8b92488f3e0cc54694d0a6e17caa4d42bc6410ba99cef75b829401dd"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/nb7vpq904m.ko": {
+      "bytes": 54592,
+      "sha256": "5d6ee3bb78f72af5714d5a84e6f74a3ee6b9319da1d20e42890607b775945c5a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/nb7vpq904m.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/nb7vpq904m.ko",
+      "sha256": "5d6ee3bb78f72af5714d5a84e6f74a3ee6b9319da1d20e42890607b775945c5a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ns.ko": {
+      "bytes": 150368,
+      "sha256": "484db85a2e0a9e90c0c8f9fb019a12bd3d5621aca4f8d40bbb0917b16b90c320"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/nvme-core.ko": {
+      "bytes": 321200,
+      "sha256": "d4816b0d3b4a2f694bff89484d3db9f7a7a62e9d7f130b63bbba8ff8a70b13f7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/nvme.ko": {
+      "bytes": 120280,
+      "sha256": "204dc31f2719fa23d6b655ccdd42836b47cf50b08943f5747aaf1d137118a4d7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/nvmem_qcom-spmi-sdam.ko": {
+      "bytes": 15184,
+      "sha256": "6c81223dcad33b69d174258d33d8a411f290b2d29986ee9f8d3840ae12dfe33a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/nvmem_qfprom.ko": {
+      "bytes": 26736,
+      "sha256": "e1d78c78be165fca4ebea1708817bef6edb2df46b463ebb87b174419fc84b3d6"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/nvmem_qfprom.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/nvmem_qfprom.ko",
+      "sha256": "e1d78c78be165fca4ebea1708817bef6edb2df46b463ebb87b174419fc84b3d6"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ofpart.ko": {
+      "bytes": 19392,
+      "sha256": "53cd0ec9552a876048ca5f9ec2ba3369a0e7a665402d6f0be1ef3cc603b3fc20"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ofpart.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/ofpart.ko",
+      "sha256": "53cd0ec9552a876048ca5f9ec2ba3369a0e7a665402d6f0be1ef3cc603b3fc20"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/panel_event_notifier.ko": {
+      "bytes": 16984,
+      "sha256": "3a5f0c72ba08caf72ea7dabcf0208d1dca47b2c409c9bbeeef42e79fa59336b5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/panel_event_notifier.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/panel_event_notifier.ko",
+      "sha256": "3a5f0c72ba08caf72ea7dabcf0208d1dca47b2c409c9bbeeef42e79fa59336b5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pci-msm-drv.ko": {
+      "bytes": 492792,
+      "sha256": "385918f0f1c6f4ac53989e2453366b27b815243c9fd304e91fefa64f16996454"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pci-msm-drv.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pci-msm-drv.ko",
+      "sha256": "385918f0f1c6f4ac53989e2453366b27b815243c9fd304e91fefa64f16996454"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pdr_interface.ko": {
+      "bytes": 38008,
+      "sha256": "e3b14eac217e9f9fc4cae1bc321c4ac0bcc5ee0d4c011c3b07f7a8da87366108"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pdr_interface.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pdr_interface.ko",
+      "sha256": "e3b14eac217e9f9fc4cae1bc321c4ac0bcc5ee0d4c011c3b07f7a8da87366108"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/perf_helper.ko": {
+      "bytes": 51312,
+      "sha256": "6e1ed28b99c5bc6ec8be93584d489008a97029953502fe55b86ec449ed34bad7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/perf_helper.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/perf_helper.ko",
+      "sha256": "6e1ed28b99c5bc6ec8be93584d489008a97029953502fe55b86ec449ed34bad7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-generic.ko": {
+      "bytes": 25816,
+      "sha256": "5ec635a4e5faa3422a273990f3798f32bc40d765bf1dee07d7026e2481a5b263"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-generic.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-generic.ko",
+      "sha256": "5ec635a4e5faa3422a273990f3798f32bc40d765bf1dee07d7026e2481a5b263"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-msm-m31-eusb2.ko": {
+      "bytes": 35688,
+      "sha256": "b929c58e031e0482c2b921b74020ba395fb0f8f61a82f0ef7d34681aca14fe3f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-msm-m31-eusb2.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-msm-m31-eusb2.ko",
+      "sha256": "b929c58e031e0482c2b921b74020ba395fb0f8f61a82f0ef7d34681aca14fe3f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-msm-snps-eusb2.ko": {
+      "bytes": 52880,
+      "sha256": "45f732741ae913fbeb99048fa873b943f172d2039753cb4e38f705367761a033"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-msm-snps-eusb2.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-msm-snps-eusb2.ko",
+      "sha256": "45f732741ae913fbeb99048fa873b943f172d2039753cb4e38f705367761a033"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-msm-ssusb-qmp.ko": {
+      "bytes": 48080,
+      "sha256": "38e3e9778cf8730ddb056875fdc09fc07b263250fd36fe4b3f28cadf5e40cc9c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-msm-ssusb-qmp.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-msm-ssusb-qmp.ko",
+      "sha256": "38e3e9778cf8730ddb056875fdc09fc07b263250fd36fe4b3f28cadf5e40cc9c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-emu.ko": {
+      "bytes": 17688,
+      "sha256": "483d385c066ef73ac43389e91687540833f131fe09c5f9d83500597b375de145"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-qcom-emu.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-emu.ko",
+      "sha256": "483d385c066ef73ac43389e91687540833f131fe09c5f9d83500597b375de145"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-kalama.ko": {
+      "bytes": 31176,
+      "sha256": "f80178ca4cd53b87e0d42fdf1d113ff735c9303ac529fec0610a5e9f081265d5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-khaje.ko": {
+      "bytes": 26136,
+      "sha256": "de4c3bfa90964be6fea3e737b718253a62314c6681438b1f9a837af012c7238e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-qcom-ufs-qmp-v4-khaje.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-khaje.ko",
+      "sha256": "de4c3bfa90964be6fea3e737b718253a62314c6681438b1f9a837af012c7238e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-kona.ko": {
+      "bytes": 26864,
+      "sha256": "2874d7d04c8472fa2a009c42a715c263c96dfb564e9d030f59f972a4effd9192"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-qcom-ufs-qmp-v4-kona.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-kona.ko",
+      "sha256": "2874d7d04c8472fa2a009c42a715c263c96dfb564e9d030f59f972a4effd9192"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-lahaina.ko": {
+      "bytes": 26840,
+      "sha256": "987b2b978646623dce08d9d53bc153e344545fe899a95e12edd906c9cfe8d4bf"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-qcom-ufs-qmp-v4-lahaina.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-lahaina.ko",
+      "sha256": "987b2b978646623dce08d9d53bc153e344545fe899a95e12edd906c9cfe8d4bf"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-waipio.ko": {
+      "bytes": 26840,
+      "sha256": "84b3a766c180ab69da8675ae474ade95c683bffdeeda387a337b04414f1a953c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-qcom-ufs-qmp-v4-waipio.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4-waipio.ko",
+      "sha256": "84b3a766c180ab69da8675ae474ade95c683bffdeeda387a337b04414f1a953c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4.ko": {
+      "bytes": 27552,
+      "sha256": "91f58837de4f5c7f594ec138d2ffccdb3efc4bc78378c4583f2343d1a20e77c7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/phy-qcom-ufs-qmp-v4.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qmp-v4.ko",
+      "sha256": "91f58837de4f5c7f594ec138d2ffccdb3efc4bc78378c4583f2343d1a20e77c7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs-qrbtc-sdm845.ko": {
+      "bytes": 21640,
+      "sha256": "566e0ed2d52e2d1d9022bd4b0ac7ea22bd31345d503079da0a8f68c528ef5956"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/phy-qcom-ufs.ko": {
+      "bytes": 50728,
+      "sha256": "e81e0b6c4e27ce370f07e938b77779b01dca7635ec940b9ab4464aac862853c4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-crow.ko": {
+      "bytes": 157136,
+      "sha256": "0405bfeda90c7b0d9f643a053d94ad49ab038e544fc9c38057352c48e10ace78"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-kalama.ko": {
+      "bytes": 187712,
+      "sha256": "f48f094670f13341e97f0919e573511db4296061b922bcdfde82615620fe74c4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-msm.ko": {
+      "bytes": 78968,
+      "sha256": "5536ca6fa8f9f67cf3964804212a35dd20f1da962a2306e7dcdf0ba315f85deb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-spmi-gpio.ko": {
+      "bytes": 63424,
+      "sha256": "1adc9936ed6000e91bb60c07cb6f06b3a29d1c5a65e54f78edd9196e6f64b3b7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-spmi-gpio.ko",
+      "sha256": "1adc9936ed6000e91bb60c07cb6f06b3a29d1c5a65e54f78edd9196e6f64b3b7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-spmi-mpp.ko": {
+      "bytes": 40408,
+      "sha256": "50a57ad1483b09e2b2143f3a342a3a25ef5240cf5c0bcb6ececc45e3c964958c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pinctrl-spmi-mpp.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pinctrl-spmi-mpp.ko",
+      "sha256": "50a57ad1483b09e2b2143f3a342a3a25ef5240cf5c0bcb6ececc45e3c964958c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pm8941-pwrkey.ko": {
+      "bytes": 29416,
+      "sha256": "f7ffca3a36ca0285481380bd83f97c31966da8c41dd6053f91ef76e8c31bc342"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pm8941-pwrkey.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pm8941-pwrkey.ko",
+      "sha256": "f7ffca3a36ca0285481380bd83f97c31966da8c41dd6053f91ef76e8c31bc342"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pmic-pon-log.ko": {
+      "bytes": 31880,
+      "sha256": "d7424db96355311ee3436ca25fb1fb40645ce345c9ea8dc7fb22c9884ab88bdf"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pmic-pon-log.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pmic-pon-log.ko",
+      "sha256": "d7424db96355311ee3436ca25fb1fb40645ce345c9ea8dc7fb22c9884ab88bdf"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pmic_glink.ko": {
+      "bytes": 44200,
+      "sha256": "26dbc949f648526bcf3e6fac52d703b1a381bdbc6927841fa38be1282e06b134"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pmic_glink.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pmic_glink.ko",
+      "sha256": "26dbc949f648526bcf3e6fac52d703b1a381bdbc6927841fa38be1282e06b134"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pmu_scmi.ko": {
+      "bytes": 11920,
+      "sha256": "36da291b2aee0088134aae9d3c19706db2e9a36459296adda4535713f666e37e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pmu_vendor.ko": {
+      "bytes": 16416,
+      "sha256": "ca571f598e53fc59c27c3efce679dfac0237dc45c990c8b3d26b27c7c134cdda"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/policy_engine.ko": {
+      "bytes": 19808,
+      "sha256": "8016a79dc16c07fd3c886700bccfb03a8438f9ab0a09bc343a98a967035fc1b0"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/policy_engine.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/policy_engine.ko",
+      "sha256": "8016a79dc16c07fd3c886700bccfb03a8438f9ab0a09bc343a98a967035fc1b0"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/process_exit.ko": {
+      "bytes": 12112,
+      "sha256": "969af9f6eedc3002290ec59d1cfb6ad1a1cd683d470531b042d2b141fa625a80"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/process_exit.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/process_exit.ko",
+      "sha256": "969af9f6eedc3002290ec59d1cfb6ad1a1cd683d470531b042d2b141fa625a80"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/proxy-consumer.ko": {
+      "bytes": 23624,
+      "sha256": "24f7ce6214c91a42997296e0f4a64ead416b1d38a958af56d43b6fece18ed0b6"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/pwm-qti-lpg.ko": {
+      "bytes": 57464,
+      "sha256": "d9b82b562f0eb703d6a1727c0c418464342f1fb99da10220242e98b3296e6c21"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pwm-qti-lpg.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/pwm-qti-lpg.ko",
+      "sha256": "d9b82b562f0eb703d6a1727c0c418464342f1fb99da10220242e98b3296e6c21"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qbt_handler.ko": {
+      "bytes": 67480,
+      "sha256": "ecb17061e557a97e30aa55f64567f66c1818892395811fcb33d40403da57faa9"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qbt_handler.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qbt_handler.ko",
+      "sha256": "ecb17061e557a97e30aa55f64567f66c1818892395811fcb33d40403da57faa9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-cpufreq-hw-debug.ko": {
+      "bytes": 21712,
+      "sha256": "445d23e0d8883addf66aec9d260a1cae33162fa41421c37700bf812cc2190ebb"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom-cpufreq-hw-debug.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom-cpufreq-hw-debug.ko",
+      "sha256": "445d23e0d8883addf66aec9d260a1cae33162fa41421c37700bf812cc2190ebb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-cpufreq-hw.ko": {
+      "bytes": 100344,
+      "sha256": "c53ac8f21c4282c26aaada17e3cfa8cc5db0aa187e358434d97fc06ea31bf728"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-dcvs.ko": {
+      "bytes": 157200,
+      "sha256": "6dde359693494da22675004123aa2bb03efcc731dc4a8e1ea07e56351da7868b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-dload-mode.ko": {
+      "bytes": 30712,
+      "sha256": "ab41a46cff56111723a31e3ad074faf440682a8425d3b5b9b9532334594beabb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-hv-haptics.ko": {
+      "bytes": 279336,
+      "sha256": "14a7866267ffe683ca820f4f93e464f86dfeb5cbee7259217ab62aee6af62d65"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom-hv-haptics.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom-hv-haptics.ko",
+      "sha256": "14a7866267ffe683ca820f4f93e464f86dfeb5cbee7259217ab62aee6af62d65"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-pdc.ko": {
+      "bytes": 37456,
+      "sha256": "b8dfb41fe92989377fc6fb320380b366babf588de054111092a928a41b1fd702"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-pmu-lib.ko": {
+      "bytes": 102240,
+      "sha256": "d5dcce513cd3b771c21987113117e22ee1bfa6c046de6c58a1971bc2682fc1eb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-pon.ko": {
+      "bytes": 14488,
+      "sha256": "cce2524d8fb72118b03c35b7bea74ae65912593a6e9d94c28a547b6abdf329d9"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom-pon.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom-pon.ko",
+      "sha256": "cce2524d8fb72118b03c35b7bea74ae65912593a6e9d94c28a547b6abdf329d9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-reboot-reason.ko": {
+      "bytes": 17920,
+      "sha256": "5f3ed2966a3519814e8ac68df2aaa9dd15cfb3d6dbce78d32c7efda33cc216a5"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-scm.ko": {
+      "bytes": 204344,
+      "sha256": "167b5b7e96ffabe0c108f4a70d28fb3009393d66d19f05302ddcf7b36bdfa13d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-spmi-adc5-gen3.ko": {
+      "bytes": 60280,
+      "sha256": "c3067b9214a9ac108270c1987e776dfd57f4c378d3d42c1f6d542a2f19bcad7c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom-spmi-adc5-gen3.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom-spmi-adc5-gen3.ko",
+      "sha256": "c3067b9214a9ac108270c1987e776dfd57f4c378d3d42c1f6d542a2f19bcad7c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-spmi-pmic.ko": {
+      "bytes": 21104,
+      "sha256": "bc7fbb2331b5768687c5f873da24491eb62aec210628c1fb738a607345112f96"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-spmi-temp-alarm.ko": {
+      "bytes": 28456,
+      "sha256": "8086c6af9e86fdcc11ba3aebed82c1572ddc357bd69fa0755380e9ae629148ad"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom-spmi-temp-alarm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom-spmi-temp-alarm.ko",
+      "sha256": "8086c6af9e86fdcc11ba3aebed82c1572ddc357bd69fa0755380e9ae629148ad"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom-vadc-common.ko": {
+      "bytes": 39872,
+      "sha256": "39f8c656a6c13cbb26cf8bb25ca37e5e5586cd4ed10ee481eb96d1e7c61f7d49"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom-vadc-common.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom-vadc-common.ko",
+      "sha256": "39f8c656a6c13cbb26cf8bb25ca37e5e5586cd4ed10ee481eb96d1e7c61f7d49"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_aoss.ko": {
+      "bytes": 51864,
+      "sha256": "2bd1fe99cd4495e1533535fa22e60dd5d132c22092097700fa8f469410cbe448"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_cpu_vendor_hooks.ko": {
+      "bytes": 23736,
+      "sha256": "5abe4355e254b2f05ef54c88707533ba5c60b200e1c74c6ca1e992e4b89ee9f9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_cpuss_sleep_stats.ko": {
+      "bytes": 28104,
+      "sha256": "bb648d40f78d38d55b79333e01f87a8e05a4a32573d3395550f059b53cb2adf3"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_cpuss_sleep_stats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_cpuss_sleep_stats.ko",
+      "sha256": "bb648d40f78d38d55b79333e01f87a8e05a4a32573d3395550f059b53cb2adf3"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_dma_heaps.ko": {
+      "bytes": 163008,
+      "sha256": "9a4612ef264c4a29812cc1bc72f222195da3d0c0f50474912d4ae18fbc0b967b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_edac.ko": {
+      "bytes": 21136,
+      "sha256": "702f93bfea0238648b57e561cc5f0288aff4cd5dea7bf047fbe4236a7cd7043c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_edac.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_edac.ko",
+      "sha256": "702f93bfea0238648b57e561cc5f0288aff4cd5dea7bf047fbe4236a7cd7043c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_esoc.ko": {
+      "bytes": 251752,
+      "sha256": "6e83c1bd136024ab378a3918898ca2aa2b9c97824319c7d1dd9f6791dc2d92fa"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_esoc.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_esoc.ko",
+      "sha256": "6e83c1bd136024ab378a3918898ca2aa2b9c97824319c7d1dd9f6791dc2d92fa"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_glink.ko": {
+      "bytes": 106984,
+      "sha256": "bba9a96710b8b8a3003bf67761611eef81625ef908fa6226193cbd5f2cec529b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_glink.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_glink.ko",
+      "sha256": "bba9a96710b8b8a3003bf67761611eef81625ef908fa6226193cbd5f2cec529b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_glink_smem.ko": {
+      "bytes": 21360,
+      "sha256": "895df2e3ba426a33161a6ee89d24e50cabc9a78bfcb635712acefdccbc246efa"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_glink_smem.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_glink_smem.ko",
+      "sha256": "895df2e3ba426a33161a6ee89d24e50cabc9a78bfcb635712acefdccbc246efa"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_hwspinlock.ko": {
+      "bytes": 16440,
+      "sha256": "d0f8f3e1991d869068ddaa7a5f346b8da8d9ec25008c0e694cc729d035a63d46"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_iommu_debug.ko": {
+      "bytes": 105064,
+      "sha256": "7f9a90a1f54f928ed9094ff7cd83181695ea01428495a379a31bfb862636b05a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_iommu_debug.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_iommu_debug.ko",
+      "sha256": "7f9a90a1f54f928ed9094ff7cd83181695ea01428495a379a31bfb862636b05a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_iommu_util.ko": {
+      "bytes": 153976,
+      "sha256": "93f97b2c01ed36dc44bd736330ae65dcc6a26b5c4641142d768a86e833c4fed9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_ipc_lite.ko": {
+      "bytes": 16768,
+      "sha256": "55cf6c7e4cd3331655f81e95b835494a0856bd3f289bcf844f6979551fcb42b8"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_ipc_lite.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_ipc_lite.ko",
+      "sha256": "55cf6c7e4cd3331655f81e95b835494a0856bd3f289bcf844f6979551fcb42b8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_ipc_logging.ko": {
+      "bytes": 59592,
+      "sha256": "55d036453379dddb057733ad977d181b9134edfc99b7988a5e2c11cca9b5e9fd"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_ipcc.ko": {
+      "bytes": 24464,
+      "sha256": "82bef691300eeba317c9d602974317425f8c6e9abade97635afa4e574a6ecc5c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_llcc_pmu.ko": {
+      "bytes": 62768,
+      "sha256": "23bf09f72d1dc946a59cdc5f2801b72309f6e30c1770b2403471e6b0feb20fa1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_logbuf_vh.ko": {
+      "bytes": 22752,
+      "sha256": "9477ea9b7355d99acb67d97b012d610d048f652ba6aea12bb23ba5c23892f8e3"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_lpm.ko": {
+      "bytes": 163032,
+      "sha256": "17b39f7c9412679c94af2082fb198b5633d20535d0cc77176c74a60549593195"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_lpm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_lpm.ko",
+      "sha256": "17b39f7c9412679c94af2082fb198b5633d20535d0cc77176c74a60549593195"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_pil_info.ko": {
+      "bytes": 17544,
+      "sha256": "dc5ca6f6e80146d7e275999499e97ba4e49478abf5978cd303a2e76fcbe14124"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_pil_info.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_pil_info.ko",
+      "sha256": "dc5ca6f6e80146d7e275999499e97ba4e49478abf5978cd303a2e76fcbe14124"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_q6v5.ko": {
+      "bytes": 108384,
+      "sha256": "c7148b0dc9062a115e5cc139d52af79e574d37e8279cc76bcae0d1f03d4e1f2c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_q6v5.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_q6v5.ko",
+      "sha256": "c7148b0dc9062a115e5cc139d52af79e574d37e8279cc76bcae0d1f03d4e1f2c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_q6v5_pas.ko": {
+      "bytes": 100504,
+      "sha256": "03e5d55ffcc8aee372d7bc9a5d1c01d735d148d3d7fc0dbe00d272254614fa00"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_q6v5_pas.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_q6v5_pas.ko",
+      "sha256": "03e5d55ffcc8aee372d7bc9a5d1c01d735d148d3d7fc0dbe00d272254614fa00"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_ramdump.ko": {
+      "bytes": 25296,
+      "sha256": "f455eb391a4ce3393e6358b9366be07d2705308be0c9c9e5528592dc31a2b86d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_ramdump.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_ramdump.ko",
+      "sha256": "f455eb391a4ce3393e6358b9366be07d2705308be0c9c9e5528592dc31a2b86d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_rimps.ko": {
+      "bytes": 19264,
+      "sha256": "f642a9f94ae63aa9fe471200ace0203fdb239823fb44f2fb1aeca7ef91e38e8a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_rpmh.ko": {
+      "bytes": 152208,
+      "sha256": "9e4d810e2fc82235c0e97c48a363bafd302d9f97cb5b3b5aa71c3b01763c7fe9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_smd.ko": {
+      "bytes": 47584,
+      "sha256": "bcfafd922792e9e511ed48f9508df01d15cef8f45bf8fb837650a31fd5c04792"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_smd.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_smd.ko",
+      "sha256": "bcfafd922792e9e511ed48f9508df01d15cef8f45bf8fb837650a31fd5c04792"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_sysmon.ko": {
+      "bytes": 48360,
+      "sha256": "6e0d9f5474f97b8b73ddabf10ef49cfb53f3eac321cd83bf1dde7d5dd6d4d0c1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_sysmon.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_sysmon.ko",
+      "sha256": "6e0d9f5474f97b8b73ddabf10ef49cfb53f3eac321cd83bf1dde7d5dd6d4d0c1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_tsens.ko": {
+      "bytes": 103072,
+      "sha256": "cf198a9979d8743f8d1d03d18bc2cf34efad36930f96ac623e123aceb926ffd0"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_va_minidump.ko": {
+      "bytes": 40672,
+      "sha256": "c6224ad83d13309713650d34cd6861db03aaa4d1f0e660a3bd3cc24e9b11222b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcom_va_minidump.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qcom_va_minidump.ko",
+      "sha256": "c6224ad83d13309713650d34cd6861db03aaa4d1f0e660a3bd3cc24e9b11222b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qcom_wdt_core.ko": {
+      "bytes": 56552,
+      "sha256": "cba6a00f767200ae4655e77eb03a8119b3ade6545994d372bbdb18bb3a116671"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qdss_bridge.ko": {
+      "bytes": 51024,
+      "sha256": "979513bdaca2e321bb83e52a4e7bde96e3b988505547f313f3e4315851e0db60"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qdss_bridge.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qdss_bridge.ko",
+      "sha256": "979513bdaca2e321bb83e52a4e7bde96e3b988505547f313f3e4315851e0db60"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qmi_helpers.ko": {
+      "bytes": 124520,
+      "sha256": "2d765bec6f40af0ff3205389c39f9436c1e805d7aa9b88286f2b9a1e974fa1f7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qmi_helpers.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qmi_helpers.ko",
+      "sha256": "2d765bec6f40af0ff3205389c39f9436c1e805d7aa9b88286f2b9a1e974fa1f7"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qnoc-crow.ko": {
+      "bytes": 190360,
+      "sha256": "c60fc22e40159bc359d449f7c720a67271c148939380a8fbdaa537711e7ac5b9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qnoc-kalama.ko": {
+      "bytes": 303672,
+      "sha256": "9b131d0d59b5ace14366b5e40b5ffc7f445dfbfc7b262dd054dddb03e738d5b4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qnoc-qos.ko": {
+      "bytes": 12144,
+      "sha256": "d42dd37ba0effd760b73feec284c6c71130204a5d3f6ef141bbe8358b5e5ac93"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qrng_dlkm.ko": {
+      "bytes": 25952,
+      "sha256": "627923e862b03472fba14d0f4f323d03c662b80dfcba2ecf7d7aba90836a7600"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qrng_dlkm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qrng_dlkm.ko",
+      "sha256": "627923e862b03472fba14d0f4f323d03c662b80dfcba2ecf7d7aba90836a7600"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qrtr-gunyah.ko": {
+      "bytes": 34488,
+      "sha256": "52a946fadcb83df400f30216c54474101be8692f73611325480ce0f1a2149521"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qrtr-gunyah.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qrtr-gunyah.ko",
+      "sha256": "52a946fadcb83df400f30216c54474101be8692f73611325480ce0f1a2149521"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qrtr-mhi.ko": {
+      "bytes": 107112,
+      "sha256": "e55c51ee669f9f243cb90e50705e1be1254202385d504dc1a77e0d32087f1f5b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qrtr-mhi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qrtr-mhi.ko",
+      "sha256": "e55c51ee669f9f243cb90e50705e1be1254202385d504dc1a77e0d32087f1f5b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qrtr-smd.ko": {
+      "bytes": 17272,
+      "sha256": "840c481268af47e8a7c105cb418418a8c1485856338f0611379cb43f7dfcfa6a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qrtr-smd.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qrtr-smd.ko",
+      "sha256": "840c481268af47e8a7c105cb418418a8c1485856338f0611379cb43f7dfcfa6a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qrtr.ko": {
+      "bytes": 165976,
+      "sha256": "6b2580d94cca1f4a42fc9c658e98fe4bb43b30096560bc3cd5dde8dbcf335968"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qsee_ipc_irq_bridge.ko": {
+      "bytes": 35592,
+      "sha256": "407425b5b3396f63ff27e7f19e00c661b2a4232e15e1367c3bbab49037e719cd"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qsee_ipc_irq_bridge.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qsee_ipc_irq_bridge.ko",
+      "sha256": "407425b5b3396f63ff27e7f19e00c661b2a4232e15e1367c3bbab49037e719cd"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qseecom_proxy.ko": {
+      "bytes": 16264,
+      "sha256": "0fd3ec6f59a6aeed02e784c3d84c39fd4ceb11753e16aea99ce8b77b24820836"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qseecom_proxy.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qseecom_proxy.ko",
+      "sha256": "0fd3ec6f59a6aeed02e784c3d84c39fd4ceb11753e16aea99ce8b77b24820836"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti-fixed-regulator.ko": {
+      "bytes": 20360,
+      "sha256": "452173f2a32348db6071df182ad96896508ffb28851cc7c66d95427c3a9afdba"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti-fixed-regulator.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti-fixed-regulator.ko",
+      "sha256": "452173f2a32348db6071df182ad96896508ffb28851cc7c66d95427c3a9afdba"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti-ocp-notifier.ko": {
+      "bytes": 18256,
+      "sha256": "2ed1155ec237767b66d2ffdc9e03539dee372e415a055d9e58b152269bf0c260"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti-ocp-notifier.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti-ocp-notifier.ko",
+      "sha256": "2ed1155ec237767b66d2ffdc9e03539dee372e415a055d9e58b152269bf0c260"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti-regmap-debugfs.ko": {
+      "bytes": 31624,
+      "sha256": "cacfe68fcefb59820a68d6cdca51a75bb25bb2c3806b777ea6710020fe9e34a4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_battery_charger.ko": {
+      "bytes": 291216,
+      "sha256": "5bd9aa0a3693b49aa1a1b19e6c7d4503b6a2a098af45e2217c717b464712ea07"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_battery_charger.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_battery_charger.ko",
+      "sha256": "5bd9aa0a3693b49aa1a1b19e6c7d4503b6a2a098af45e2217c717b464712ea07"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_battery_debug.ko": {
+      "bytes": 41456,
+      "sha256": "0d69f43e1642ca0303df115baf12f236577ebd277d5d80d95de26226d1a94125"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_battery_debug.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_battery_debug.ko",
+      "sha256": "0d69f43e1642ca0303df115baf12f236577ebd277d5d80d95de26226d1a94125"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_cpufreq_cdev.ko": {
+      "bytes": 21712,
+      "sha256": "e03ccdd3368216dae09cca975aeb41e7860fec841b5faac88b4dfd4f7f959f95"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_cpufreq_cdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_cpufreq_cdev.ko",
+      "sha256": "e03ccdd3368216dae09cca975aeb41e7860fec841b5faac88b4dfd4f7f959f95"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_devfreq_cdev.ko": {
+      "bytes": 20392,
+      "sha256": "10d641d481acb683f7cb20388fb0f20eb0feebdd002b4a712d2ac9ef692f0e6b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_devfreq_cdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_devfreq_cdev.ko",
+      "sha256": "10d641d481acb683f7cb20388fb0f20eb0feebdd002b4a712d2ac9ef692f0e6b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_qmi_cdev.ko": {
+      "bytes": 35312,
+      "sha256": "3e8b43aeaeb56c59c27d4037f6ed5be65143a4ad706ec16d5a2d71d7c98e4ad8"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_qmi_cdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_qmi_cdev.ko",
+      "sha256": "3e8b43aeaeb56c59c27d4037f6ed5be65143a4ad706ec16d5a2d71d7c98e4ad8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_qmi_sensor_v2.ko": {
+      "bytes": 43544,
+      "sha256": "9df9bf7326059fca5ce8d3b00c6b57e4f54fb832d1df3ea7b862931e73d451a1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_qmi_sensor_v2.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_qmi_sensor_v2.ko",
+      "sha256": "9df9bf7326059fca5ce8d3b00c6b57e4f54fb832d1df3ea7b862931e73d451a1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/qti_userspace_cdev.ko": {
+      "bytes": 16544,
+      "sha256": "6032e5f152b3a93c81d3261007c6849602cb3e6697047de84405733c7e0aaa4b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qti_userspace_cdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/qti_userspace_cdev.ko",
+      "sha256": "6032e5f152b3a93c81d3261007c6849602cb3e6697047de84405733c7e0aaa4b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/rdbg.ko": {
+      "bytes": 36608,
+      "sha256": "593b475c32b76c2e8c10e62fd54e77b56ab1c4f820c6dc98c2ea69a63de0d0d8"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rdbg.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/rdbg.ko",
+      "sha256": "593b475c32b76c2e8c10e62fd54e77b56ab1c4f820c6dc98c2ea69a63de0d0d8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/reboot-mode.ko": {
+      "bytes": 18496,
+      "sha256": "58b8dbe480e05d1993774addb69f6919eb2345776d0e775993cffe4a4f341a65"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/reboot-mode.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/reboot-mode.ko",
+      "sha256": "58b8dbe480e05d1993774addb69f6919eb2345776d0e775993cffe4a4f341a65"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/redriver.ko": {
+      "bytes": 25040,
+      "sha256": "a5b2277649667530dec2033c9a5684d08f98cb74dee45f750da6afed0abf6b9f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/redriver.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/redriver.ko",
+      "sha256": "a5b2277649667530dec2033c9a5684d08f98cb74dee45f750da6afed0abf6b9f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/regmap-spmi.ko": {
+      "bytes": 18264,
+      "sha256": "47f63d2dd31d9d752bd0b33a641525cf94de78cfea13246f79f9e584da9879bc"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/repeater-i2c-eusb2.ko": {
+      "bytes": 22224,
+      "sha256": "eee5ff426c90acfa534e04cba8168228e48951f774ae5d1396dac474fb18fefb"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/repeater-i2c-eusb2.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/repeater-i2c-eusb2.ko",
+      "sha256": "eee5ff426c90acfa534e04cba8168228e48951f774ae5d1396dac474fb18fefb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/repeater-qti-pmic-eusb2.ko": {
+      "bytes": 38336,
+      "sha256": "b296f57150f3ad179190764dc6ae977a701cbd7c6e0ecfabc23b604455745a53"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/repeater-qti-pmic-eusb2.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/repeater-qti-pmic-eusb2.ko",
+      "sha256": "b296f57150f3ad179190764dc6ae977a701cbd7c6e0ecfabc23b604455745a53"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/repeater.ko": {
+      "bytes": 17568,
+      "sha256": "e3ce0879d9e26c7141795b10cb0553fa277daf4fb837597f404916a14d3c23c4"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/repeater.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/repeater.ko",
+      "sha256": "e3ce0879d9e26c7141795b10cb0553fa277daf4fb837597f404916a14d3c23c4"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/rimps_log.ko": {
+      "bytes": 70304,
+      "sha256": "860ef388ea4457f137a81bd8eb2c2f092dd8a2ec079cd4940f17d285aba2faab"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rimps_log.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/rimps_log.ko",
+      "sha256": "860ef388ea4457f137a81bd8eb2c2f092dd8a2ec079cd4940f17d285aba2faab"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/rpmh-regulator.ko": {
+      "bytes": 49872,
+      "sha256": "4ca6c6d221016fe79aecb4eee8808e4cc7cb0702153c02ce8ab85701e391c793"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/rproc_qcom_common.ko": {
+      "bytes": 107184,
+      "sha256": "56455884f65ecab180858b14865032c5d1469a767fce40c55b9496b0d2b6b5f9"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rproc_qcom_common.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/rproc_qcom_common.ko",
+      "sha256": "56455884f65ecab180858b14865032c5d1469a767fce40c55b9496b0d2b6b5f9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/rq_stats.ko": {
+      "bytes": 16416,
+      "sha256": "74ebec10b7fbfc537ef3f293e80d269ffe72304a3497eaed9385e39fdb3898fe"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rq_stats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/rq_stats.ko",
+      "sha256": "74ebec10b7fbfc537ef3f293e80d269ffe72304a3497eaed9385e39fdb3898fe"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/rtc-pm8xxx.ko": {
+      "bytes": 30104,
+      "sha256": "a9032090c5c416c29f0698912a91f47515a82406c923c7817458d5f15342479b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sched-walt.ko": {
+      "bytes": 920232,
+      "sha256": "aa83d25302ee2c2d55b0af62d34176da0584d03835774cf29dd025b47e8659ba"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sdhci-msm.ko": {
+      "bytes": 149944,
+      "sha256": "c86e0f29e9f726e9a0580552dc8fd7462cd0a5b7f7b3934067c62fa1e75e83cf"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sdpm_clk.ko": {
+      "bytes": 18840,
+      "sha256": "d9314a1f9abef917ab05db3980d77d3b95883403d215b0dbe7e10ed781697196"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sdpm_clk.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/sdpm_clk.ko",
+      "sha256": "d9314a1f9abef917ab05db3980d77d3b95883403d215b0dbe7e10ed781697196"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/secure_buffer.ko": {
+      "bytes": 100920,
+      "sha256": "fc2080636a81b9f29fa80694d964d48e6e9d91e34284cc68b1373cf942a29d5d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sg.ko": {
+      "bytes": 147840,
+      "sha256": "66f0050512328099cbc988d3acb3271f58ddd526304299728c6c30fcdaca191f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sg.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/sg.ko",
+      "sha256": "66f0050512328099cbc988d3acb3271f58ddd526304299728c6c30fcdaca191f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/slim-qcom-ngd-ctrl.ko": {
+      "bytes": 220184,
+      "sha256": "79d18a0c2ad581973876439727153383ab0b3736508d541f04e8e050e9bba09e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/slim-qcom-ngd-ctrl.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/slim-qcom-ngd-ctrl.ko",
+      "sha256": "79d18a0c2ad581973876439727153383ab0b3736508d541f04e8e050e9bba09e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/slimbus.ko": {
+      "bytes": 64240,
+      "sha256": "982c6337df97142a5ef52c6cc7bfd833def2bd85ed7917b8a78b298a268cda80"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/slimbus.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/slimbus.ko",
+      "sha256": "982c6337df97142a5ef52c6cc7bfd833def2bd85ed7917b8a78b298a268cda80"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/smcinvoke_dlkm.ko": {
+      "bytes": 310112,
+      "sha256": "6f6984e5016fe2bab6701c0a620c560c399e44db19fd107731575ec21db5812d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/smcinvoke_dlkm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/smcinvoke_dlkm.ko",
+      "sha256": "6f6984e5016fe2bab6701c0a620c560c399e44db19fd107731575ec21db5812d"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/smem.ko": {
+      "bytes": 29120,
+      "sha256": "c5df4122a14c26171658b7ef06a89f7ae5eefd71cf76e614ac2b3991801d5d3e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/smp2p.ko": {
+      "bytes": 36768,
+      "sha256": "367b72b7aad0db904487160607cbc8511ea80d94fdf0fd8b0e994d56eac5c546"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/smp2p.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/smp2p.ko",
+      "sha256": "367b72b7aad0db904487160607cbc8511ea80d94fdf0fd8b0e994d56eac5c546"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/smp2p_sleepstate.ko": {
+      "bytes": 14944,
+      "sha256": "75f3051fcb50d95e1911f2021650ce098f99267b7797d4b3e7332f53ca9b8f6f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/smp2p_sleepstate.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/smp2p_sleepstate.ko",
+      "sha256": "75f3051fcb50d95e1911f2021650ce098f99267b7797d4b3e7332f53ca9b8f6f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/snd-soc-hdmi-codec.ko": {
+      "bytes": 48784,
+      "sha256": "83ae7417e1b8e8ed4d11332c877a7f7832b40fafc91f3fd5ec3581e2d20732ca"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/snd-soc-hdmi-codec.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/snd-soc-hdmi-codec.ko",
+      "sha256": "83ae7417e1b8e8ed4d11332c877a7f7832b40fafc91f3fd5ec3581e2d20732ca"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/snd-usb-audio-qmi.ko": {
+      "bytes": 101256,
+      "sha256": "239f4d110b06d18a18508e6b446084a1b37c9222e49a37793b41675d72f04a79"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/snd-usb-audio-qmi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/snd-usb-audio-qmi.ko",
+      "sha256": "239f4d110b06d18a18508e6b446084a1b37c9222e49a37793b41675d72f04a79"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/soc_sleep_stats.ko": {
+      "bytes": 36256,
+      "sha256": "41db921bc4717e3101dbd736edae9e37d8ea93ac9fe3d65c9ffd78847cfeff65"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/soc_sleep_stats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/soc_sleep_stats.ko",
+      "sha256": "41db921bc4717e3101dbd736edae9e37d8ea93ac9fe3d65c9ffd78847cfeff65"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/socinfo.ko": {
+      "bytes": 118632,
+      "sha256": "38cbf1d0c70d5be135d606e03945d381b69b64fa9b96a3629d0f1bc6165a6e03"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/spi-msm-geni.ko": {
+      "bytes": 167296,
+      "sha256": "e14a07fa2c4b5c6fa38fff3cc9a10a18951ed3324942f60b8aefc70bfdb3ddd9"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/spi-msm-geni.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/spi-msm-geni.ko",
+      "sha256": "e14a07fa2c4b5c6fa38fff3cc9a10a18951ed3324942f60b8aefc70bfdb3ddd9"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/spmi-glink-debug.ko": {
+      "bytes": 21064,
+      "sha256": "1c1890ce87a471ce5d4e662bfc604a0bc4b95d01f86d9d2b2bd8a3b6737b23da"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/spmi-glink-debug.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/spmi-glink-debug.ko",
+      "sha256": "1c1890ce87a471ce5d4e662bfc604a0bc4b95d01f86d9d2b2bd8a3b6737b23da"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/spmi-pmic-arb-debug.ko": {
+      "bytes": 23136,
+      "sha256": "c619a5411218e5a2011b991457066b11a611844bd5cfe78f9c9dd81f3a0b4c51"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/spmi-pmic-arb-debug.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/spmi-pmic-arb-debug.ko",
+      "sha256": "c619a5411218e5a2011b991457066b11a611844bd5cfe78f9c9dd81f3a0b4c51"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/spmi-pmic-arb.ko": {
+      "bytes": 81928,
+      "sha256": "c83c74460c5226c1327a0be88beaad75efffd461efacd858bbc616fb2103f40b"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sps_drv.ko": {
+      "bytes": 506120,
+      "sha256": "286f4586f001c389e5667a68b4ca2e16d5f7970904a5fe99423acfbef980f3a3"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sps_drv.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/sps_drv.ko",
+      "sha256": "286f4586f001c389e5667a68b4ca2e16d5f7970904a5fe99423acfbef980f3a3"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/stm_console.ko": {
+      "bytes": 13016,
+      "sha256": "e143b2a72dc4a32419662e0d206c3953b6802bd2e073bd2a81a93658b9d5b7ab"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_console.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/stm_console.ko",
+      "sha256": "e143b2a72dc4a32419662e0d206c3953b6802bd2e073bd2a81a93658b9d5b7ab"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/stm_core.ko": {
+      "bytes": 74936,
+      "sha256": "bc7a09429a8f85683795eba85aa9115869b51a61f07fc0773d19ed80a6cf5826"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_core.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/stm_core.ko",
+      "sha256": "bc7a09429a8f85683795eba85aa9115869b51a61f07fc0773d19ed80a6cf5826"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/stm_ftrace.ko": {
+      "bytes": 14184,
+      "sha256": "41c17242db981a19d8c8a1f8122305df1ea1c1b6dc2e54c2b5fb009d79b3f322"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_ftrace.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/stm_ftrace.ko",
+      "sha256": "41c17242db981a19d8c8a1f8122305df1ea1c1b6dc2e54c2b5fb009d79b3f322"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/stm_p_basic.ko": {
+      "bytes": 13664,
+      "sha256": "3962cd3ea5f9e8c8df6349632214702732c4d802f2a58d7348fb5e662f892629"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_p_basic.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/stm_p_basic.ko",
+      "sha256": "3962cd3ea5f9e8c8df6349632214702732c4d802f2a58d7348fb5e662f892629"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/stm_p_ost.ko": {
+      "bytes": 13848,
+      "sha256": "5fed3c78cdea5247bc6a5092deb6ce3fbb1de03fcfdcfd20df560a754f4a4da1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_p_ost.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/stm_p_ost.ko",
+      "sha256": "5fed3c78cdea5247bc6a5092deb6ce3fbb1de03fcfdcfd20df560a754f4a4da1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/stub-regulator.ko": {
+      "bytes": 19104,
+      "sha256": "32e560557792366eebf8b123aa3b813820614e83f6b6ee79c21e65d90d94a180"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/subsystem_sleep_stats.ko": {
+      "bytes": 34264,
+      "sha256": "3a4281dd30289ec5220020bdc3e2e750af1e638d79f204746fdc4106ff9e4460"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/subsystem_sleep_stats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/subsystem_sleep_stats.ko",
+      "sha256": "3a4281dd30289ec5220020bdc3e2e750af1e638d79f204746fdc4106ff9e4460"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/swinfo.ko": {
+      "bytes": 61112,
+      "sha256": "2ff3c3214149df14861a0c72f1fe039522b6b52df9c7e14a7522f6c9348116dc"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sync_fence.ko": {
+      "bytes": 41880,
+      "sha256": "8701e1ac4a9eea612f500e8508d609d7af9f431277a47c2b115b106641b3527a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sync_fence.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/sync_fence.ko",
+      "sha256": "8701e1ac4a9eea612f500e8508d609d7af9f431277a47c2b115b106641b3527a"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/synx-driver.ko": {
+      "bytes": 156848,
+      "sha256": "1746739b53abca8805e3e2d903f4def5a9043fb81cc56275cc9109bf9487b1af"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/synx-driver.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/synx-driver.ko",
+      "sha256": "1746739b53abca8805e3e2d903f4def5a9043fb81cc56275cc9109bf9487b1af"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sys_pm_vx.ko": {
+      "bytes": 30208,
+      "sha256": "4e3cdd8583425b363b0867c0d695434b4d06160f3d2dd3eebac322637c0d7458"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sys_pm_vx.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/sys_pm_vx.ko",
+      "sha256": "4e3cdd8583425b363b0867c0d695434b4d06160f3d2dd3eebac322637c0d7458"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/sysmon_subsystem_stats.ko": {
+      "bytes": 48224,
+      "sha256": "0d7afed657d43815e855c3d82207f96d2105f21927e80cde711f1b3b4260597f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sysmon_subsystem_stats.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/sysmon_subsystem_stats.ko",
+      "sha256": "0d7afed657d43815e855c3d82207f96d2105f21927e80cde711f1b3b4260597f"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/tcsrcc-kalama.ko": {
+      "bytes": 18216,
+      "sha256": "74676291004957207aee0e9207047dcc553a4a2c99136b17c530d88dcf3b67f1"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/thermal_minidump.ko": {
+      "bytes": 14168,
+      "sha256": "75644c235932d6a7e390adf63eebae4738ab7cd9d85f4d5a0ec8806615e774b8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/thermal_pause.ko": {
+      "bytes": 30568,
+      "sha256": "b2e16b0e846666ec1545fcf54be7d312a7b001e414a234e4d9e4da0e8e565d70"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/tmecom-intf.ko": {
+      "bytes": 38784,
+      "sha256": "8380afb7197e98a0cd32401d71a8bf690601bd4946762e9d0436b371124089f2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/tz_log_dlkm.ko": {
+      "bytes": 47464,
+      "sha256": "8d6050e51d315bc9e8e397278158c6add2721d31e914c68360f16a8778bd93bc"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/tz_log_dlkm.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/tz_log_dlkm.ko",
+      "sha256": "8d6050e51d315bc9e8e397278158c6add2721d31e914c68360f16a8778bd93bc"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ucsi_glink.ko": {
+      "bytes": 38808,
+      "sha256": "2abace7cf1c0bccda7ae02ceeb1223d8ba118aca3b9e318973f4a749e0db0150"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ucsi_glink.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/ucsi_glink.ko",
+      "sha256": "2abace7cf1c0bccda7ae02ceeb1223d8ba118aca3b9e318973f4a749e0db0150"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ufs_qcom.ko": {
+      "bytes": 23955752,
+      "sha256": "4ed7c3d29374fa91ee7ce263917174de6a8d3bad7907ce027074eca017b515cb"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/ufshcd-crypto-qti.ko": {
+      "bytes": 24480,
+      "sha256": "c034de568e280714abd1c76bd06fff9995136617c3d2da8babe9f026ee01973c"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usb_bam.ko": {
+      "bytes": 98472,
+      "sha256": "951cb0c98fc62f3934e32ad09ae8281a75c829f983de81272466e35dec4c3962"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usb_bam.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usb_bam.ko",
+      "sha256": "951cb0c98fc62f3934e32ad09ae8281a75c829f983de81272466e35dec4c3962"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usb_f_ccid.ko": {
+      "bytes": 56688,
+      "sha256": "1c3c878a654caef1b95b202cdf54822ea2b9ec9ded3f4ce1497c75d221553009"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usb_f_ccid.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usb_f_ccid.ko",
+      "sha256": "1c3c878a654caef1b95b202cdf54822ea2b9ec9ded3f4ce1497c75d221553009"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usb_f_cdev.ko": {
+      "bytes": 82712,
+      "sha256": "f5aaf8aa51d277d56488f5a81c56cb492acff98410c57b55078faf3784a2d0bf"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usb_f_cdev.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usb_f_cdev.ko",
+      "sha256": "f5aaf8aa51d277d56488f5a81c56cb492acff98410c57b55078faf3784a2d0bf"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usb_f_diag.ko": {
+      "bytes": 50392,
+      "sha256": "6451fbaedc06456f0e0e7b75f5473775c3e3de2bcffadf95e1aa5bfad6ed6d38"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usb_f_diag.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usb_f_diag.ko",
+      "sha256": "6451fbaedc06456f0e0e7b75f5473775c3e3de2bcffadf95e1aa5bfad6ed6d38"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usb_f_gsi.ko": {
+      "bytes": 290688,
+      "sha256": "3a88663078161650116287bbf5aa6b7c66f19b6f3983f96f8d799f268a4db463"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usb_f_gsi.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usb_f_gsi.ko",
+      "sha256": "3a88663078161650116287bbf5aa6b7c66f19b6f3983f96f8d799f268a4db463"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usb_f_qdss.ko": {
+      "bytes": 61320,
+      "sha256": "2866eefcf79562aea705ac733415497ae1515e9ed31402f17ab90fb10847339e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usb_f_qdss.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usb_f_qdss.ko",
+      "sha256": "2866eefcf79562aea705ac733415497ae1515e9ed31402f17ab90fb10847339e"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/usbmon.ko": {
+      "bytes": 90352,
+      "sha256": "e89312b95988b38d512b45dcdbdcb759716a880261a33f8d42be6d18fe8081fa"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/usbmon.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/usbmon.ko",
+      "sha256": "e89312b95988b38d512b45dcdbdcb759716a880261a33f8d42be6d18fe8081fa"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/videocc-kalama.ko": {
+      "bytes": 42728,
+      "sha256": "fe81c34031c3333c6a0f6ccb637c2755a73cd3547ffe0b6bb7875f5536f34acc"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/xlogchar.ko": {
+      "bytes": 30008,
+      "sha256": "6dbe5c02adf4406a2d6919f8e69a92e898cd9c892c22812b0d237f2ec21c4bf2"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/xlogchar.ko": {
+      "hardlink": "inputs/stock/modules/vendor_boot/lib/modules/xlogchar.ko",
+      "sha256": "6dbe5c02adf4406a2d6919f8e69a92e898cd9c892c22812b0d237f2ec21c4bf2"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/zram.ko": {
+      "bytes": 125656,
+      "sha256": "aea046d394baf76d15ea3297f940debdfa6047a98548d56e98309591a51d0eb8"
+    },
+    "inputs/stock/modules/vendor_boot/lib/modules/zsmalloc.ko": {
+      "bytes": 83744,
+      "sha256": "81ddf27f02b4181f1d237011a6d6d531c0dc76aae32561aaccb057e203cdf04f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/adsp_loader_dlkm.ko": {
+      "bytes": 22464,
+      "sha256": "dd0f80211e0e4c350e6f8d448063cd35b643c81e1275664c2a36a76d4a1c0f3e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/audio_pkt_dlkm.ko": {
+      "bytes": 45400,
+      "sha256": "b8bd3337fe682bb2ec9d4fb21914b6c0e5fd81f12ac2479878b49f99b0aed3ec"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/audio_prm_dlkm.ko": {
+      "bytes": 28616,
+      "sha256": "8508e148843854d5bf3057a34f0211c7835467c43d05a016507a8990336fce12"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/audpkt_ion_dlkm.ko": {
+      "bytes": 35584,
+      "sha256": "caa4ef68eb9ecafb5d10df5f11fb867473681720d19a72bb0c3f8d9d76dd2472"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/aw882xx_dlkm.ko": {
+      "bytes": 393568,
+      "sha256": "8c13724fedd5a6d42bb01742c739078c0aba39d9b6ae2987d59a01beb6ce9612"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/bt_fm_slim.ko": {
+      "bytes": 48976,
+      "sha256": "bc99193025361f8b15ba6e466de12c203caf80a7e181a3984d5b37ca32c73d68"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/btpower.ko": {
+      "bytes": 64776,
+      "sha256": "200da3ef8a9635eb4f177d0b198c3ee1bf8139d9fd764242ce4f9d7e027e33ce"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/camera.ko": {
+      "bytes": 6833336,
+      "sha256": "cfba1abec86799aeefcd0b73f216181b56b49952e69152d077219492d50bba82"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cameralog.ko": {
+      "bytes": 26352,
+      "sha256": "127f42d944a05b2475760cb460cd6452165e4180a920316061f6f9cb0768ad30"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cnss2.ko": {
+      "bytes": 978880,
+      "sha256": "32f9cbf282f00ce1447942a78668d53b3023b3e8119eca61a8cf19cff03e5390"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cnss_nl.ko": {
+      "bytes": 16928,
+      "sha256": "d09c9caddccf1c31a456b96ad08f288fbce71ca680d29ed7178686da916442a2"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cnss_plat_ipc_qmi_svc.ko": {
+      "bytes": 64024,
+      "sha256": "695f67b341277857519747aae97bce454c45df317d9f0318db7782416187b75d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cnss_prealloc.ko": {
+      "bytes": 19272,
+      "sha256": "827fedec5ec5eb052015de176d34aee9cb3477c6dedaad33abfc5e1229926028"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cnss_utils.ko": {
+      "bytes": 35864,
+      "sha256": "f1d7479ffc94c8e3366df931e699a772344dceeeb2a2fc3975e6928b3f441c0c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cs35l41_dlkm.ko": {
+      "bytes": 754504,
+      "sha256": "3982bb0e384d5e59cd34cfc1426cd8f02b6fe59a2d49d50428b5c569fdfd435b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/cs35l43_dlkm.ko": {
+      "bytes": 405568,
+      "sha256": "d34a7171d9446b3f6534eebebeb74d90e252ff593443dc4fc0e93388805b0d8b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/fts_touch_spi.ko": {
+      "bytes": 681192,
+      "sha256": "88d0c1ba4ddcc8559300a0dd79f20a3cfd85d1e53de7b4d2f329a86310e5dd73"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/gpr_dlkm.ko": {
+      "bytes": 43256,
+      "sha256": "8723ebb773137984de184e0f05af2ac5e0a53cfc7f69195b0843c14ee72adc79"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/gsim.ko": {
+      "bytes": 555856,
+      "sha256": "f4818585ddcf49cd5dfe6d4dd4278c4323ebc60626d96758d74c747d57bf0d76"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/hardwareinfo.ko": {
+      "bytes": 16232,
+      "sha256": "28ae9cdc04548bf4403649e07381a2e6c165d42296f1ad40ed87f777bb7c1501"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/hdmi_dlkm.ko": {
+      "bytes": 45328,
+      "sha256": "67699f896f5c45186ce8ebaec2384cd6cfe42c7460278f5c810649d6ac6dbff6"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ipa_clientsm.ko": {
+      "bytes": 738976,
+      "sha256": "4264c65dd321a204fcbf7b5938552caf3bf1563ab6e9f00a636a37dbb8f4e135"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ipam.ko": {
+      "bytes": 5482064,
+      "sha256": "4f1ac750e75e58391ff3901d74d9c62ff606156655da8bd31e1f4012481d47ad"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/ipanetm.ko": {
+      "bytes": 12016,
+      "sha256": "58058d75d51ec73d99eefc6e1bbe87d6d768a75e22e10e93c0c9eb34b889cb25"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lpass_cdc_dlkm.ko": {
+      "bytes": 136448,
+      "sha256": "981c8c276fdcb94eca5468edfdee83ea08df7277a8cc80222c70ebbb6a2d7898"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lpass_cdc_rx_macro_dlkm.ko": {
+      "bytes": 237712,
+      "sha256": "62ab94eecc8417e009b73ef0c09fc4fa5d706a2bfd9948026eb296c3a7a51b2e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lpass_cdc_tx_macro_dlkm.ko": {
+      "bytes": 152680,
+      "sha256": "ab66b3bba64f08339c02195e4be3f20647f396bbfecffa732aab5965619d25da"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lpass_cdc_va_macro_dlkm.ko": {
+      "bytes": 137304,
+      "sha256": "23c95b0af0809841e5b1d574f40634cbb2ffb52cb22d58c2bc8b9427937a095e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lpass_cdc_wsa2_macro_dlkm.ko": {
+      "bytes": 218544,
+      "sha256": "64777d51be5d2c687b85a4973fbef625fba19f9755ab8697c07d1ae06cca52ca"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/lpass_cdc_wsa_macro_dlkm.ko": {
+      "bytes": 218536,
+      "sha256": "82754e1cf92ab1fd49090f1daaea309b1487e43658da97e7a9f5735dc58fea1e"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/machine_dlkm.ko": {
+      "bytes": 171488,
+      "sha256": "9e3be63dcc700788548f99cbecd9b8e3450b3f0ca41acd0e61e54de7d8530645"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mbhc_dlkm.ko": {
+      "bytes": 162240,
+      "sha256": "64b5c69999ebab3267e72e55ae9355b5855ba2dbbe44fc560dc4c2c8ce01c195"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/miicmpfilter.ko": {
+      "bytes": 17832,
+      "sha256": "4d6ab6d0a40b8db3407b67c539e07c51b6df629e5727c6d340d34981fa0b77f1"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/minet.ko": {
+      "bytes": 59656,
+      "sha256": "ab2d62154dce003e35f2e50d946c740a787d83606a8f01abf917544cbba3b94f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/miwill.ko": {
+      "bytes": 120024,
+      "sha256": "4243a6fa1b2291aaa9b719f527089c5a5a3d8dabf367db4890491e0627d5322d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/mmrm_test_module.ko": {
+      "bytes": 85040,
+      "sha256": "2e942d33fd8be1d49dcb8bae7963ac2017bb66e3f9a50c6d86b84a955cd0b850"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm-eva.ko": {
+      "bytes": 922232,
+      "sha256": "b50936ca43d2d46c98b701ddd5ed4b22cc99262cb3086982363b8ddd692f5ecf"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_kgsl.ko": {
+      "bytes": 2894152,
+      "sha256": "874fa7ffec21618ac3fe6bac678c88c829e9927de954d49f5396bd590ecada0a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/msm_video.ko": {
+      "bytes": 1370192,
+      "sha256": "1680c97ccbef2d8e583179eaaab7988c6668b9f50cce44d2c854406eccbf5f0a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/nxp-nci.ko": {
+      "bytes": 87640,
+      "sha256": "5cb7f523cf920f5dd4cb06ed45fcc493ffb09f1d4b1a79e9b03be14ddb4128f0"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/pinctrl_lpi_dlkm.ko": {
+      "bytes": 47240,
+      "sha256": "08b0fa25d8964294d45142f4d8132e0b3d87fdc2fc74e3c2e3026c3ba0e300a7"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/q6_dlkm.ko": {
+      "bytes": 16704,
+      "sha256": "919d85b9cee6efe9561203e4ae2e00984341258dc3e7a85863e147390922452c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/q6_notifier_dlkm.ko": {
+      "bytes": 43320,
+      "sha256": "90793980f9b77aa8752659e522d03f3ba85f583ce1b625cf7154ab7ebad14048"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/q6_pdr_dlkm.ko": {
+      "bytes": 13032,
+      "sha256": "f542762e33d71ca6e2936614befe66c54f5a274e1994d707b062c27f6b338557"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qca_cld3_kiwi.ko": {
+      "bytes": 17808504,
+      "sha256": "1a2f228027692d7bd16cb05fec6afc7d431820769aee19b18d1a14e744a47a99"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qca_cld3_kiwi_v2.ko": {
+      "bytes": 17907416,
+      "sha256": "0818a15fb8400d06ebb465b11a92dfe1b861647a498f662e77e123cd05a7de4c"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qca_cld3_qca6490.ko": {
+      "bytes": 17076776,
+      "sha256": "9dcfc4be2121d2f99d9a4d0b84ac5b0526db73d5ed6c74d687c39d600c7c56da"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qce50_dlkm.ko": {
+      "bytes": 156224,
+      "sha256": "dff62a5c912d450faaf3ad2ce52a54677ecd0432c936549df3d328f5bcad4a57"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcedev-mod_dlkm.ko": {
+      "bytes": 86216,
+      "sha256": "175227ac2d41e3f1861859897a49b22181dedcf4fe3f96a323429294789b26d2"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/qcrypto-msm_dlkm.ko": {
+      "bytes": 158848,
+      "sha256": "ff3859e73526ee06a2237ed99d2c3353772fa19f2a41b4db13215433811a78f0"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/radio-i2c-rtc6226-qca.ko": {
+      "bytes": 87976,
+      "sha256": "1643ad9ac388c16cf210051bcbf07abafe2e3807b1df4561b854f06a928583d5"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_aps.ko": {
+      "bytes": 40232,
+      "sha256": "a919254eae1103a815d204b4435d9d847e8579412bd60d10fe2dcc3b84b1a5ae"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_core.ko": {
+      "bytes": 529208,
+      "sha256": "24d2b0f445abaa4e5c1fef5ca5bbc8aa158859e7653901965c3884e843001314"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_ctl.ko": {
+      "bytes": 28968,
+      "sha256": "3b1bee183e6c4b29f264a609ec9ea755255330638fd849d14304b27e221a9567"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_offload.ko": {
+      "bytes": 40560,
+      "sha256": "96032a7dca2dc2a4ce0fd274fc1036b6367c4cd45e7bef0e29015419476c908a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_perf.ko": {
+      "bytes": 15640,
+      "sha256": "a79674cdebf05345fcaa686d12313a55c0a01294ea52740c23e4891939eb96bc"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_perf_tether.ko": {
+      "bytes": 27480,
+      "sha256": "636c633a75f8b6eff35becb814eb7e4ffbf289b1e6581df88a8ebd7717e57a54"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_sch.ko": {
+      "bytes": 20520,
+      "sha256": "e70eee16ab00962ba1634973a04aa33f3acd3ad9e276eb62aca577a6459bf11f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_shs.ko": {
+      "bytes": 331976,
+      "sha256": "564e5ecd5046ae3f5c961d8bf366a75236afd3b62b508648cedbd1d2067b0780"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rmnet_wlan.ko": {
+      "bytes": 100976,
+      "sha256": "e6fd9eb29a0a4669e9a96c43d8186befbb3a42f2b957576ea3152fa135798357"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/rndisipam.ko": {
+      "bytes": 130808,
+      "sha256": "e9f4d2189cda7862d5b7b3505c2918442daa01183c6e8c5b399ffad130893156"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/sla.ko": {
+      "bytes": 47016,
+      "sha256": "1fdb3e412d90df8d7b5b638e0427fe012983cfd569f33a43b947dc137306d470"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/snd_event_dlkm.ko": {
+      "bytes": 26024,
+      "sha256": "8399cbccfcee6735f364acc553db662c1f223d6029d7a3d04ff8c790d445a0e0"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/spf_core_dlkm.ko": {
+      "bytes": 36776,
+      "sha256": "4c20001367448e04181546acb46db9204f1eba7f2b44f78f077bdc097989e68b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_nfc_i2c.ko": {
+      "bytes": 56120,
+      "sha256": "e2f1d1dcf3f8a684a834f9e5f01e07d8f95764bb11840c2b611e66a7eb0550b4"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stm_st54se_gpio.ko": {
+      "bytes": 20504,
+      "sha256": "262f85cd57cc98047a4a5b670ee72273b509fd667283b8807860d1203f13504d"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/stub_dlkm.ko": {
+      "bytes": 12456,
+      "sha256": "545942d166c32d2e11e34be366a1f12fb4c94f8a47879f21739b593b7adcba6b"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/swr_ctrl_dlkm.ko": {
+      "bytes": 144000,
+      "sha256": "f19d2a77d6122086f6d5dc5d5188abe2f2c8d67b203147ebe92b26539b731cc4"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/swr_dlkm.ko": {
+      "bytes": 68448,
+      "sha256": "daddf2a40922ba32eb1a76a42d47a24449d32f7e371f9acdce3a9a50decbd825"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/swr_dmic_dlkm.ko": {
+      "bytes": 41520,
+      "sha256": "1b9ea5c161394293891b46e6474cc1b848d5fc7dcbe4ba5fd3daf49c704851dd"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/swr_haptics_dlkm.ko": {
+      "bytes": 41544,
+      "sha256": "b9180a686b2887648ab486e587361e9a7640761d77b488b0c2196bda38ca67ae"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wcd938x_dlkm.ko": {
+      "bytes": 368768,
+      "sha256": "99b06583907a5c146f7215896eee80e9132630db6e0954360e1501bf7d0e712f"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wcd938x_slave_dlkm.ko": {
+      "bytes": 28064,
+      "sha256": "73ec544057f553ac6b393456707acc7a575b52c131b834c20ba88ec935406835"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wcd9xxx_dlkm.ko": {
+      "bytes": 59912,
+      "sha256": "771bdebc085b80e246eb382730035fa9bef716e8afdf3d50dfc22e5bb1bfb422"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wcd_core_dlkm.ko": {
+      "bytes": 70184,
+      "sha256": "cf9f1b17c2af633a99abde0c721efdb18d5730c9dfd79eea44dd449eaecd2011"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wlan_firmware_service.ko": {
+      "bytes": 82792,
+      "sha256": "ee4be2d3bade814b66124eaecdcb52ac8848e7b0f192d49f0b7c8a800251820a"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wsa883x_dlkm.ko": {
+      "bytes": 105104,
+      "sha256": "75c309205bd66fa57072e5b18cec24c9d68de4b5c698fe67493d450ea0f44e83"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/wsa884x_dlkm.ko": {
+      "bytes": 150688,
+      "sha256": "38855bc7d62256d5ac9260f8706e429e95fa837d6fae21c3cbb00e9e40a577cc"
+    },
+    "inputs/stock/modules/vendor_dlkm/lib/modules/xiaomi_touch.ko": {
+      "bytes": 122560,
+      "sha256": "4f54678c8b125232628d59ff35ad45bf8e21ffc184962aee5a4e70f992eb2d67"
+    },
+    "inputs/stock/images/boot.img": {
+      "bytes": 100663296,
+      "sha256": "d973cf1324147d9411feea07ab070aec11fb2ec2c1bb5ef7a512b42bd44c8859"
+    },
+    "inputs/stock/device-check/full-audit/complete-crc-comparison.json": {
+      "bytes": 165232,
+      "sha256": "c216677595421a581ba6634774a7e9a34b3c606e21d06df0d0e3211aefd062ed"
+    },
+    "inputs/stock/device-check/full-audit/stock-module-export-crcs.json": {
+      "bytes": 400536,
+      "sha256": "e14ab879f7ba31f699ce03040b10dffb7e0de2bb9bbcbfcf4e98b014890ff959"
+    },
+    "inputs/baseline/Module.symvers": {
+      "bytes": 520434,
+      "sha256": "369185dcb831ae98d05a496cac6f6a6e243fa5308704242eb93d3335b02477fa"
+    },
+    "inputs/baseline/signing_key.x509": {
+      "bytes": 1357,
+      "sha256": "00080bc679cedd7f379bd70a83302fdb37566cb2b2354ea7d3d3162ecac3fc2c"
+    },
+    "inputs/anykernel-template.zip": {
+      "bytes": 3163378,
+      "sha256": "b3ff5ee43540d86baf5593f379afec595096e8ac04ed41b5d09073fe3f11b00e"
+    },
+    "inputs/manager/SukiSU_v4.2.0_40900-release.apk": {
+      "bytes": 14084162,
+      "sha256": "4ca9810e6355fbff0bbe4bf5ce159808e64a40d85987a11894030cd990a6bdf3"
+    },
+    "downloads/builtin-e2912817f4e1.tar.gz": {
+      "bytes": 97832,
+      "sha256": "1d7602aa91999dd65ed925f210f4a5b5d04b31201b515afe86cb9687225a06de"
+    },
+    "downloads/susfs-bca0d2333c1a.tar.gz": {
+      "bytes": 90406,
+      "sha256": "e6b760c05f9273eb5e55537d46b70ee1abde9b4ea2863185421938baf1feaec4"
+    },
+    "downloads/manager-904c60d1.tar.gz": {
+      "bytes": 20128155,
+      "sha256": "613a48ddee6364f9a3aba4921655e15d41b911e7737d07a17c0cb66ab92de63d"
+    },
+    "tools/ksu_susfs": {
+      "bytes": 4625408,
+      "sha256": "79fbf618219bac79b53a6212f7d9d6d233165b3b48cad0b8f9b55c5565f363f9"
+    }
+  },
+  "origin": "Verified OS3.0.309.0.WMCCNXM OTA and locked upstream build inputs; no phone backup or private key."
+}

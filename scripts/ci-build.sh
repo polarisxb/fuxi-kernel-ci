@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+workspace=
+dist=
+while (( $# )); do
+  case "$1" in
+    --workspace) workspace=${2:?Missing workspace path}; shift 2 ;;
+    --dist) dist=${2:?Missing dist path}; shift 2 ;;
+    *) printf '%s\n' 'Usage: scripts/ci-build.sh --workspace WORK --dist DIST' >&2; exit 2 ;;
+  esac
+done
+[[ -n "$workspace" && -n "$dist" ]] || { printf '%s\n' 'Both --workspace and --dist are required.' >&2; exit 2; }
+workspace=$(realpath -m "$workspace")
+dist=$(realpath -m "$dist")
+[[ "$workspace" != "$REPO_ROOT" && "$dist" != "$REPO_ROOT" ]] || {
+  printf '%s\n' 'Workspace and dist must not replace the development repository.' >&2; exit 2;
+}
+[[ ! -e "$dist" ]] || { printf '%s\n' 'Refusing to overwrite an existing dist directory.' >&2; exit 1; }
+[[ -n "${KERNEL_SIGNING_KEY_PEM:-}" ]] || {
+  printf '%s\n' 'KERNEL_SIGNING_KEY_PEM repository secret is required for a signed kernel build.' >&2; exit 1;
+}
+
+source_sha=$(git -C "$REPO_ROOT" rev-parse HEAD)
+[[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+[[ "${CI_SOURCE_SHA:-${GITHUB_SHA:-$source_sha}}" == "$source_sha" ]] || {
+  printf '%s\n' 'CI source SHA differs from the checked out development commit.' >&2; exit 1;
+}
+[[ -z "$(git -C "$REPO_ROOT" status --porcelain --untracked-files=all)" ]] || {
+  printf '%s\n' 'Development checkout is dirty; commit the intended inputs before publishing a build.' >&2; exit 1;
+}
+export CI_SOURCE_SHA="$source_sha"
+export CI_SOURCE_REF="${CI_SOURCE_REF:-${GITHUB_REF:-local}}"
+export LTO_PARTITIONS=1 LTO_THREADS=2
+export PYTHONDONTWRITEBYTECODE=1
+unset PYTHONOPTIMIZE
+
+export SIGNING_KEY_DIR
+SIGNING_KEY_DIR=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/fuxi-signing.XXXXXX")
+cleanup() {
+  rm -f "$workspace/out/sukisu/common/certs/signing_key.pem"
+  rm -rf "$SIGNING_KEY_DIR"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+case "$SIGNING_KEY_DIR/" in
+  "$REPO_ROOT/"*|"$workspace/"*)
+    printf '%s\n' 'Signing key directory must stay outside development and build inputs.' >&2
+    exit 1 ;;
+esac
+umask 077
+printf '%s\n' "$KERNEL_SIGNING_KEY_PEM" > "$SIGNING_KEY_DIR/signing_key.pem"
+unset KERNEL_SIGNING_KEY_PEM
+python3 "$REPO_ROOT/tests/test_ci_export.py"
+
+python3 "$REPO_ROOT/scripts/bootstrap.py" --workspace "$workspace"
+install -m 0644 "$workspace/inputs/baseline/signing_key.x509" "$SIGNING_KEY_DIR/signing_key.x509"
+umask 022
+
+run_id="${GITHUB_RUN_ID:-local}-$(date -u +%Y%m%dT%H%M%SZ)"
+reports="$workspace/reports/ci-$run_id"
+mkdir -p "$reports"
+python3 "$workspace/tests/run_regressions.py" --phase pre --report "$reports/pre-regressions.json"
+bash "$workspace/scripts/run-build.sh"
+python3 "$workspace/tests/run_regressions.py" --phase post --report "$reports/post-regressions.json"
+python3 "$workspace/scripts/verify-build.py" --out-dir "$workspace/out/sukisu/common" \
+  --report-dir "$reports/offline" --expected-ksu yes
+python3 "$workspace/scripts/collect-delivery.py" | tee "$reports/collection.json"
+env -u PYTHONOPTIMIZE -u PYTHONDONTWRITEBYTECODE -u PYTHONPYCACHEPREFIX \
+  python3 "$workspace/artifacts/scripts/verify-delivery.py" --art-dir "$workspace/artifacts" \
+  | tee "$reports/clean-delivery-1.json"
+env -u PYTHONOPTIMIZE -u PYTHONDONTWRITEBYTECODE -u PYTHONPYCACHEPREFIX \
+  python3 "$workspace/artifacts/scripts/verify-delivery.py" --art-dir "$workspace/artifacts" \
+  | tee "$reports/clean-delivery-2.json"
+python3 "$REPO_ROOT/scripts/export-dist.py" --workspace "$workspace" --dist "$dist" --reports "$reports"

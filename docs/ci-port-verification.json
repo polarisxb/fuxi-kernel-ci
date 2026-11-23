@@ -1,0 +1,22 @@
+{
+  "scope": "Ported scripts using read-only already verified r2 source/output fixtures; no new kernel build performed here",
+  "prebuild_groups": 8,
+  "postbuild_groups": 2,
+  "all_existing_assertions_passed": true,
+  "python_ast_files": 20,
+  "shell_syntax_passed": true,
+  "exported_payloads": [
+    "Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip",
+    "SUSFS_R28_Fuxi230_40900_local2.zip"
+  ],
+  "real_verified_release_inventory_checked_before_export": true,
+  "module_zip_source_bytes_checked": true,
+  "failed_postbuild_report_rejected": true,
+  "device_operations": false,
+  "new_project_dependencies": false,
+  "export_boundary_tests": 11,
+  "export_boundary_tests_passed": true,
+  "ci_source_commit_bound_into_compilation": true,
+  "module_source_drift_after_build_rejected": true,
+  "private_key_environment_unset_before_child_tests": true
+}

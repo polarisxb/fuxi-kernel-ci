@@ -1,0 +1,230 @@
+name: Build Fuxi kernel and userspace
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuxi-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate bootstrap and Windows clients
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+  kernel:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    env:
+      FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
+      CI_SOURCE_SHA: ${{ github.sha }}
+      CI_SOURCE_REF: ${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Prepare hosted runner capacity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTIONS:-}" = true
+          test -n "${RUNNER_TEMP:-}"
+          sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/swift /opt/hostedtoolcache/CodeQL
+          available=$(df --output=avail -B1 "$RUNNER_TEMP" | tail -n 1 | tr -d ' ')
+          if (( available < 50 * 1024 * 1024 * 1024 )); then
+            printf 'Need at least 50 GiB free before 32 GiB swap plus the build workspace; found %s bytes.\n' "$available" >&2
+            exit 1
+          fi
+          task_swap="$RUNNER_TEMP/fuxi-ci.swap"
+          sudo fallocate -l 32G "$task_swap"
+          sudo chmod 600 "$task_swap"
+          sudo mkswap "$task_swap"
+          sudo swapon "$task_swap"
+          free -h
+          df -h "$RUNNER_TEMP"
+      - name: Install kernel build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential cpio flex git kmod libelf-dev libssl-dev lz4 pahole pkg-config python3 rsync unzip zip
+      - name: Cache pinned public inputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/fuxi-inputs
+          key: fuxi-kernel-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
+      - name: Build and verify the signed kernel ZIP
+        env:
+          KERNEL_SIGNING_KEY_PEM: ${{ secrets.KERNEL_SIGNING_KEY_PEM }}
+        run: bash scripts/ci-build.sh --workspace "$RUNNER_TEMP/fuxi-project" --dist "$GITHUB_WORKSPACE/dist/kernel"
+      - name: Upload verified kernel distribution
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuxi-kernel-${{ github.sha }}
+          path: dist/kernel/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+      - name: Remove temporary signing material and swap
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTIONS:-}" = true
+          test -n "${RUNNER_TEMP:-}"
+          if [[ -d "$RUNNER_TEMP/fuxi-project" ]]; then
+            find "$RUNNER_TEMP/fuxi-project" -type f -name signing_key.pem -delete
+          fi
+          if [[ -f "$RUNNER_TEMP/fuxi-ci.swap" ]]; then
+            sudo swapoff "$RUNNER_TEMP/fuxi-ci.swap" || true
+            sudo rm -f "$RUNNER_TEMP/fuxi-ci.swap"
+          fi
+
+  native:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
+      CI_SOURCE_SHA: ${{ github.sha }}
+      CI_SOURCE_REF: ${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install userspace build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git libclang-dev libssl-dev pkg-config python3 unzip zip
+      - name: Cache pinned public inputs
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/fuxi-inputs
+          key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json', 'src/SukiSU/Cargo.lock') }}
+      - name: Build the matching ARM64 status detector
+        run: bash scripts/build-ksud.sh --workspace "$RUNNER_TEMP/fuxi-native" --dist "$GITHUB_WORKSPACE/dist/native"
+      - name: Upload verified userspace distribution
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuxi-native-${{ github.sha }}
+          path: dist/native/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+  publish:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [kernel, native]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download verified kernel result
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: fuxi-kernel-${{ github.sha }}
+          path: collected/kernel
+      - name: Download verified userspace result
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: fuxi-native-${{ github.sha }}
+          path: collected/native
+      - name: Bind public assets to this source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, re, shutil
+          from pathlib import Path
+          root = Path('collected')
+          dist = Path('release-dist')
+          expected = os.environ['GITHUB_SHA']
+          allowed = {
+              'kernel': ('Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip', 'SUSFS_R28_Fuxi230_40900_local2.zip'),
+              'native': ('Fuxi_SukiSU_40900_Zygisk_StatusFix.zip', 'libksud.so'),
+          }
+          metadata = {}
+          verified_files = []
+          for component, names in allowed.items():
+              folder = root / component
+              candidates = list(folder.glob('*build-info.json'))
+              if len(candidates) != 1:
+                  raise ValueError(f'{component}: expected one build-info file')
+              info = json.loads(candidates[0].read_text())
+              commits = [info[k] for k in ('source_commit', 'source_sha', 'commit') if k in info]
+              if not commits or any(commit != expected for commit in commits):
+                  raise ValueError(f'{component}: wrong source commit')
+              checksums = {}
+              for line in (folder / 'SHA256SUMS').read_text().splitlines():
+                  match = re.fullmatch(r'([0-9a-f]{64})\s+\*?([^/\\]+)', line)
+                  if not match or match[2] in checksums:
+                      raise ValueError(f'{component}: invalid checksum manifest')
+                  checksums[match[2]] = match[1]
+              if checksums.get(candidates[0].name) != hashlib.sha256(candidates[0].read_bytes()).hexdigest():
+                  raise ValueError(f'{component}: metadata checksum mismatch')
+              metadata[component] = info
+              verified_files.append((candidates[0], f'{component}-build-info.json'))
+              for name in names:
+                  path = folder / name
+                  if not path.is_file() or path.is_symlink():
+                      raise ValueError(f'Missing regular verified asset: {path}')
+                  digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                  if checksums.get(name) != digest:
+                      raise ValueError(f'{component}: payload checksum mismatch: {name}')
+                  declared = info.get('artifacts', {}).get(name)
+                  if (not isinstance(declared, dict) or declared.get('sha256') != digest
+                          or type(declared.get('bytes')) is not int or declared['bytes'] != path.stat().st_size):
+                      raise ValueError(f'{component}: payload differs from build metadata: {name}')
+                  verified_files.append((path, name))
+          dist.mkdir()
+          for path, name in verified_files:
+              shutil.copyfile(path, dist / name)
+          files = {p.name: {'bytes': p.stat().st_size, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(dist.iterdir())}
+          info = {'schema': 1, 'repository': os.environ['GITHUB_REPOSITORY'], 'source_commit': expected, 'source_sha': expected,
+                  'source_ref': os.environ['GITHUB_REF'], 'run_id': os.environ['GITHUB_RUN_ID'], 'components': metadata, 'artifacts': files}
+          (dist / 'build-info.json').write_text(json.dumps(info, indent=2) + '\n')
+          sums = [f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in sorted(dist.iterdir())]
+          (dist / 'SHA256SUMS').write_text(''.join(sums))
+          PY
+      - name: Publish a complete immutable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          default_branch=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq '.defaultBranchRef.name')
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$default_branch" --jq '.object.sha')
+          if [[ "$default_branch" != main || "$current_sha" != "$GITHUB_SHA" ]]; then
+            printf 'This run is no longer the default branch HEAD; keeping Actions artifacts only.\n'
+            exit 0
+          fi
+          tag="ci-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          printf 'Source commit: %s\nWorkflow run: https://github.com/%s/actions/runs/%s\n\nDownload assets and validate SHA256SUMS. CI verification does not replace device testing.\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > release-notes.md
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft --title "Fuxi CI ${GITHUB_SHA:0:12}" --notes-file release-notes.md
+          gh release upload "$tag" --repo "$GITHUB_REPOSITORY" release-dist/*
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$default_branch" --jq '.object.sha')
+          if [[ "$current_sha" != "$GITHUB_SHA" ]]; then
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+            printf 'A newer commit arrived while uploading; no stale latest release was published.\n'
+            exit 0
+          fi
+          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          printf '## Public download\n\nRelease: https://github.com/%s/releases/tag/%s\n\nSource: `%s`\n' "$GITHUB_REPOSITORY" "$tag" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

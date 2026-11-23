@@ -1,0 +1,298 @@
+/* Filesystem operations are simulated; nameidata and its lifecycle are extracted. */
+#include <assert.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define CONFIG_KSU_SUSFS_OPEN_REDIRECT 1
+#define __randomize_layout
+#define likely(x) (x)
+#define unlikely(x) (x)
+#define ERR_PTR(x) ((void *)(intptr_t)(x))
+#define ERR_CAST(x) ((void *)(x))
+#define PTR_ERR(x) ((int)(intptr_t)(x))
+#define IS_ERR(x) ((uintptr_t)(x) >= (uintptr_t)-4095)
+#define WARN_ON(x) assert(!(x))
+#define ND_ROOT_PRESET 1
+#define ND_ROOT_GRABBED 2
+#define ND_JUMPED 4
+#define LOOKUP_RCU 1
+#define LOOKUP_REVAL 2
+#define LOOKUP_CACHED 4
+#define LOOKUP_DIRECTORY 8
+#define LOOKUP_DOWN 16
+#define LOOKUP_MOUNTPOINT 32
+#define LOOKUP_OPEN 64
+#define __O_TMPFILE 0100000000
+#define O_PATH 010000000
+#define FMODE_OPENED 1
+#define EOPENSTALE 518
+#define EMBEDDED_LEVELS 2
+#define MAXSYMLINKS 40
+#define GFP_KERNEL 1
+#define GFP_ATOMIC 2
+
+typedef int kuid_t;
+typedef unsigned umode_t;
+struct qstr { const char *name; unsigned len; };
+struct inode { bool redirect; };
+struct dentry { struct inode *d_inode; int refs; };
+struct vfsmount { int refs; };
+struct path { struct dentry *dentry; struct vfsmount *mnt; };
+struct delayed_call { bool pending; };
+struct filename { const char *name; };
+struct file { int f_flags, f_mode; };
+struct open_flags { int open_flag, lookup_flags, mode, intent; };
+struct user_namespace { int unused; };
+/* @NAMEIDATA@ */
+struct task { struct nameidata *nameidata; } task;
+#define current (&task)
+
+static struct inode target_inode = {true}, fake_inode, outer_inode;
+static struct dentry target = {&target_inode, 0}, fake = {&fake_inode, 0};
+static struct dentry outer_dentry = {&outer_inode, 0}, tmp_child = {&fake_inode, 0};
+static struct vfsmount mount;
+static struct user_namespace userns;
+static int rcu_depth, stack_allocs, stack_frees, delayed_runs;
+static int filename_allocs, filename_frees, helper_calls, file_allocs, file_frees;
+static int completed_walks, start_calls, fake_walks, writes;
+static int inject_error, inject_remaining, helper_error, open_error;
+static bool dynamic_stack, force_ref_walk, absent_rule, retry_sequence;
+
+static void path_get(const struct path *p)
+{
+    if (p->dentry) ++p->dentry->refs;
+    if (p->mnt) ++p->mnt->refs;
+}
+static void path_put(const struct path *p)
+{
+    if (p->dentry) assert(p->dentry->refs-- > 0);
+    if (p->mnt) assert(p->mnt->refs-- > 0);
+}
+static void dput(struct dentry *d) { if (d) assert(d->refs-- > 0); }
+static void do_delayed_call(struct delayed_call *d)
+{
+    if (d->pending) { ++delayed_runs; d->pending = false; }
+}
+static void clear_delayed_call(struct delayed_call *d) { d->pending = false; }
+static void rcu_read_unlock(void) { assert(rcu_depth-- > 0); }
+static void *kmalloc_array(size_t n, size_t size, int flags)
+{
+    assert(flags == GFP_ATOMIC || !rcu_depth);
+    ++stack_allocs;
+    void *p = calloc(n, size);
+    assert(p);
+    return p;
+}
+static void kfree(void *p) { assert(p); ++stack_frees; free(p); }
+
+/* @__set_nameidata@ */
+/* @set_nameidata@ */
+/* @restore_nameidata@ */
+/* @nd_alloc_stack@ */
+/* @drop_links@ */
+/* @terminate_walk@ */
+
+static const void *current_cred(void) { return NULL; }
+static struct file *alloc_empty_file(int flags, const void *cred)
+{
+    (void)cred;
+    struct file *f = calloc(1, sizeof(*f));
+    assert(f);
+    f->f_flags = flags;
+    ++file_allocs;
+    return f;
+}
+static void fput(struct file *f) { ++file_frees; free(f); }
+static void make_ref_walk(struct nameidata *nd)
+{
+    if (nd->flags & LOOKUP_RCU) {
+        nd->flags &= ~LOOKUP_RCU;
+        rcu_read_unlock();
+        path_get(&nd->path);
+        for (unsigned i = 0; i < nd->depth; ++i)
+            path_get(&nd->stack[i].link);
+    }
+}
+static const char *path_init(struct nameidata *nd, unsigned flags)
+{
+    /* Preserve the first real path_init dereference and LOOKUP_CACHED rule. */
+    const char *s = nd->name->name;
+    assert(current->nameidata == nd);
+    assert(++start_calls <= 12);
+    if ((flags & (LOOKUP_RCU | LOOKUP_CACHED)) == LOOKUP_CACHED)
+        return ERR_PTR(-EAGAIN);
+    nd->flags = flags;
+    nd->state |= ND_JUMPED;
+    nd->path = (struct path){!strcmp(s, "/fake") ? &fake : &target, &mount};
+    nd->inode = nd->path.dentry->d_inode;
+    if (flags & LOOKUP_RCU) ++rcu_depth;
+    else path_get(&nd->path);
+    return s;
+}
+static int link_path_walk(const char *s, struct nameidata *nd)
+{
+    if (IS_ERR(s)) return PTR_ERR(s);
+    assert(current->nameidata == nd);
+    if (force_ref_walk) make_ref_walk(nd);
+    ++nd->total_link_count;
+    ++completed_walks;
+    if (dynamic_stack) {
+        if (nd->stack == nd->internal) assert(nd_alloc_stack(nd));
+        assert(nd->depth == 0);
+        nd->depth = 1;
+        nd->stack[0].link = (struct path){&outer_dentry, &mount};
+        nd->stack[0].done.pending = true;
+        if (!(nd->flags & LOOKUP_RCU)) path_get(&nd->stack[0].link);
+    }
+    if (!strcmp(s, "/fake")) {
+        ++fake_walks;
+        if (inject_remaining) {
+            int error = retry_sequence && inject_remaining == 1 ? -ESTALE : inject_error;
+            --inject_remaining;
+            return error;
+        }
+    }
+    return 0;
+}
+static const char *open_last_lookups(struct nameidata *nd, struct file *f,
+                                   const struct open_flags *op)
+{ (void)nd; (void)f; (void)op; return NULL; }
+static const char *lookup_last(struct nameidata *nd) { (void)nd; return NULL; }
+static int handle_lookup_down(struct nameidata *nd) { (void)nd; return 0; }
+static bool d_can_lookup(struct dentry *d) { (void)d; return true; }
+static int complete_walk(struct nameidata *nd) { make_ref_walk(nd); return 0; }
+/* @path_lookupat@ */
+
+#define SUSFS_IS_INODE_OPEN_REDIRECT_WITHOUT_UID_CHECK(i) ((i) && (i)->redirect)
+static struct filename *getname_kernel(const char *name)
+{
+    assert(rcu_depth == 0); /* getname_kernel uses GFP_KERNEL. */
+    struct filename *n = malloc(sizeof(*n));
+    assert(n);
+    n->name = strdup(name);
+    assert(n->name);
+    ++filename_allocs;
+    return n;
+}
+static struct filename *susfs_open_redirect_spoof_do_sys_openat(struct inode *inode)
+{
+    (void)inode;
+    ++helper_calls;
+    assert(rcu_depth == 0);
+    if (absent_rule) return NULL;
+    if (helper_error) return ERR_PTR(helper_error);
+    return getname_kernel("/fake");
+}
+static void putname(struct filename *n)
+{
+    assert(n && !IS_ERR(n));
+    assert(!current->nameidata || current->nameidata->name != n);
+    ++filename_frees;
+    free((char *)n->name);
+    free(n);
+}
+static void audit_inode(struct filename *n, struct dentry *d, int flags)
+{ (void)d; (void)flags; assert(n && strlen(n->name)); }
+static int vfs_open(const struct path *p, struct file *f)
+{
+    (void)p;
+    if (open_error) return open_error;
+    f->f_mode |= FMODE_OPENED;
+    return 0;
+}
+static int do_open(struct nameidata *nd, struct file *f, const struct open_flags *op)
+{
+    (void)op;
+    int err = complete_walk(nd);
+    if (err) return err;
+    audit_inode(nd->name, nd->path.dentry, 0);
+    return vfs_open(&nd->path, f);
+}
+static int mnt_want_write(struct vfsmount *mnt) { (void)mnt; ++writes; return 0; }
+static void mnt_drop_write(struct vfsmount *mnt) { (void)mnt; assert(writes-- > 0); }
+static struct user_namespace *mnt_user_ns(struct vfsmount *mnt)
+{ (void)mnt; return &userns; }
+static struct dentry *vfs_tmpfile(struct user_namespace *ns, struct dentry *d,
+                                 int mode, int flags)
+{ (void)ns; (void)d; (void)mode; (void)flags; ++tmp_child.refs; return &tmp_child; }
+static int may_open(struct user_namespace *ns, const struct path *p, int mode, int flags)
+{ (void)ns; (void)p; (void)mode; (void)flags; return 0; }
+static bool d_is_symlink(struct dentry *d) { (void)d; return false; }
+
+/* @do_tmpfile@ */
+/* @do_o_path@ */
+/* @path_openat@ */
+/* @do_filp_open@ */
+/* @do_file_open_root@ */
+
+int main(int argc, char **argv)
+{
+    assert(argc == 3);
+    struct filename outer_name = {"/outer"}, original = {"/target"};
+    struct nameidata outer;
+    struct open_flags op = {0};
+    const char *kind = argv[1], *test = argv[2];
+    if (!strcmp(kind, "opath")) op.open_flag = O_PATH;
+    else if (!strcmp(kind, "tmpfile")) op.open_flag = __O_TMPFILE;
+    else assert(!strcmp(kind, "normal"));
+    force_ref_walk = true;
+    dynamic_stack = true;
+    bool have_outer = strcmp(test, "no-outer") != 0;
+    bool preset = strcmp(test, "root-preset") == 0;
+    int expected_error = 0;
+    if (!strcmp(test, "retry-child")) { inject_error = -ECHILD; inject_remaining = 1; }
+    else if (!strcmp(test, "retry-stale")) { inject_error = -ESTALE; inject_remaining = 1; }
+    else if (!strcmp(test, "permanent-child")) {
+        inject_error = -ECHILD; inject_remaining = 8; expected_error = -ECHILD;
+    } else if (!strcmp(test, "permanent-stale")) {
+        inject_error = -ESTALE; inject_remaining = 8; expected_error = -ESTALE;
+    } else if (!strcmp(test, "retry-both")) {
+        inject_error = -ECHILD; inject_remaining = 2; retry_sequence = true;
+    } else if (!strcmp(test, "alloc-failure")) { helper_error = -ENOMEM; expected_error = -ENOMEM; }
+    else if (!strcmp(test, "open-failure")) { open_error = -EACCES; expected_error = -EACCES; }
+    else if (!strcmp(test, "no-rule")) absent_rule = true;
+    else if (!strcmp(test, "unmarked")) target_inode.redirect = false;
+    else if (!strcmp(test, "rcu")) force_ref_walk = false;
+    else if (!strcmp(test, "no-rule-rcu")) { force_ref_walk = false; absent_rule = true; }
+    else if (!strcmp(test, "cached")) {
+        force_ref_walk = false; op.lookup_flags = LOOKUP_CACHED; expected_error = -EAGAIN;
+    } else assert(!strcmp(test, "success") || !have_outer || preset);
+
+    if (have_outer) {
+        set_nameidata(&outer, 13, &outer_name, NULL);
+        outer.flags = 0;
+        outer.total_link_count = 7;
+        assert(nd_alloc_stack(&outer));
+    }
+    struct path root = {&target, &mount};
+    struct file *f = preset ? do_file_open_root(&root, "/target", &op) : do_filp_open(42, &original, &op);
+    assert(current->nameidata == (have_outer ? &outer : NULL));
+    if (have_outer) {
+        assert(outer.name == &outer_name && outer.dfd == 13);
+        assert(outer.total_link_count == 7 + completed_walks);
+    }
+    assert(filename_allocs == filename_frees);
+    assert(!strcmp(original.name, "/target"));
+    assert(rcu_depth == 0);
+    assert(!writes && !target.refs && !fake.refs && !tmp_child.refs && !outer_dentry.refs && !mount.refs);
+    if (expected_error) assert(IS_ERR(f) && PTR_ERR(f) == expected_error);
+    else { assert(!IS_ERR(f) && (f->f_mode & FMODE_OPENED)); fput(f); }
+    if (!strcmp(test, "cached")) assert(helper_calls == 0);
+    if (!strcmp(test, "rcu")) assert(start_calls <= 4 && helper_calls == 1);
+    if (!strcmp(test, "no-rule")) assert(fake_walks == 0 && helper_calls > 0);
+    if (!strcmp(test, "no-rule-rcu")) assert(fake_walks == 0 && helper_calls == 1);
+    if (!strcmp(test, "unmarked")) assert(fake_walks == 0 && helper_calls == 0);
+    if (preset) assert(fake_walks == 0 && helper_calls == 0);
+    assert(file_allocs == file_frees);
+    if (have_outer) restore_nameidata();
+    assert(current->nameidata == NULL);
+    assert(stack_allocs == stack_frees);
+    assert(delayed_runs == completed_walks);
+    printf("PASS %s/%s: %d walks, %d stacks, %d temporary names\n",
+           kind, test, completed_walks, stack_allocs, filename_allocs);
+    return 0;
+}

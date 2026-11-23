@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import posixpath
 import shutil
 import struct
 import subprocess
@@ -103,7 +104,9 @@ class BootstrapTests(unittest.TestCase):
         destination = self.root / "kernel/KernelSU"
         B.extract_single_tree(archive, destination)
         self.assertEqual((destination / "kernel/Makefile").read_text(), "obj-y += ksu.o\n")
-        self.assertEqual(os.readlink(destination / "uapi"), "./kernel/include/uapi")
+        # Newer tarfile "data" filters normalize link targets ("./a" -> "a").
+        target = os.readlink(destination / "uapi").replace("\\", "/")
+        self.assertEqual(posixpath.normpath(target), "kernel/include/uapi")
         with self.assertRaisesRegex(ValueError, "already exists"):
             B.extract_single_tree(archive, destination)
         archive = self.archive([("first/a.c", "file", "a\n"), ("second/b.c", "file", "b\n")])

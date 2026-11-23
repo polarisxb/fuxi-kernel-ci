@@ -26,6 +26,7 @@ def main():
     commands = [
         ('vfs', [sys.executable, str(ROOT / 'tests/test_vfs_redirect.py')]),
         ('susfs', [sys.executable, str(ROOT / 'tests/test_susfs_runtime.py')]),
+        ('cpu-spoof', [sys.executable, str(ROOT / 'tests/test_cpu_spoof.py')]),
         ('uapi', [sys.executable, str(ROOT / 'tests/test_pipeline_uapi.py')]),
         ('provenance', [sys.executable, str(ROOT / 'tests/test_pipeline_provenance.py')]),
         ('readonly-delivery', [sys.executable, str(ROOT / 'tests/test_pipeline_readonly_verify.py')]),

@@ -154,7 +154,9 @@ class BootstrapTests(unittest.TestCase):
             return B.run(["git", "-C", path, "rev-parse", "HEAD"])
 
         ci_sha = commit_tree(repo)
-        manager_sha = commit_tree(work / "source")
+        manager_tag_sha = commit_tree(work / "source")
+        B.run(["git", "-C", work / "source", "commit", "--allow-empty", "-qm", "Keep native tip one commit after its historical tag"])
+        manager_sha = B.run(["git", "-C", work / "source", "rev-parse", "HEAD"])
         ndk_sha = commit_tree(work / "ndk")
         expected = json.loads((repo / "reference/manager-arm64-uapi.json").read_text())
         self.probe_values = list(expected.values())
@@ -188,6 +190,7 @@ class BootstrapTests(unittest.TestCase):
         self.addCleanup(patches.close)
         patches.enter_context(mock.patch.object(B, "REPO", repo))
         patches.enter_context(mock.patch.object(B, "MANAGER_SHA", manager_sha))
+        patches.enter_context(mock.patch.object(B, "MANAGER_TAG_SHA", manager_tag_sha))
         patches.enter_context(mock.patch.object(B, "NDK_SHA", ndk_sha))
         patches.enter_context(mock.patch.object(B, "run", side_effect=tool_run))
         patches.enter_context(mock.patch.dict(os.environ, {"CI_SOURCE_SHA": ci_sha, "GITHUB_ACTIONS": "true"}))
@@ -217,6 +220,8 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(result, external)
         self.assertEqual(external["source_sha"], B.run(["git", "-C", repo, "rev-parse", "HEAD"]))
         self.assertEqual(external["source_inputs"]["before"], external["source_inputs"]["after"])
+        self.assertEqual(external["historical_tag"],
+                         {"name": "v4.2.0", "commit": B.MANAGER_TAG_SHA, "distance": 1, "restored": True})
         self.assertEqual(external["source_inputs"]["before"]["ci_source"]["source_files"]["src/SukiSU/Cargo.lock"],
                          B.sha256(repo / "src/SukiSU/Cargo.lock"))
         self.assertEqual(external["source_inputs"]["before"]["native_source"]["uapi-link"],
@@ -314,6 +319,72 @@ class BootstrapTests(unittest.TestCase):
         self.probe_values[0] += 1
         with self.assertRaisesRegex(ValueError, "ARM64 Rust/C UAPI mismatch"):
             B.verify_native(work, target, dist)
+        self.assertFalse(dist.exists())
+
+    def manager_history(self, count=2):
+        source = self.root / "manager-history"
+        B.run(["git", "init", "-q", source])
+        B.run(["git", "-C", source, "config", "user.email", "test@example.invalid"])
+        B.run(["git", "-C", source, "config", "user.name", "test"])
+        first = None
+        for number in range(count):
+            B.run(["git", "-C", source, "commit", "--allow-empty", "-qm", f"Preserve actual history step {number}"])
+            if first is None:
+                first = B.run(["git", "-C", source, "rev-parse", "HEAD"])
+        head = B.run(["git", "-C", source, "rev-parse", "HEAD"])
+        patches = ExitStack()
+        self.addCleanup(patches.close)
+        patches.enter_context(mock.patch.object(B, "MANAGER_SHA", head))
+        patches.enter_context(mock.patch.object(B, "MANAGER_TAG_SHA", first))
+        patches.enter_context(mock.patch.object(B, "MANAGER_GIT_COUNT", count))
+        return source, first, head
+
+    def test_absent_historical_tag_restores_the_real_graph_without_changing_history(self):
+        source, first, head = self.manager_history()
+        result = B.manager_tag_info(source, restore_missing=True)
+        self.assertEqual(result, {"name": "v4.2.0", "commit": first, "distance": 1, "restored": True})
+        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "refs/tags/v4.2.0^{commit}"]), first)
+        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "HEAD"]), head)
+        self.assertEqual(B.run(["git", "-C", source, "rev-list", "--count", "HEAD"]), "2")
+        self.assertTrue(B.run(["git", "-C", source, "describe", "--tags", "--always"]).startswith("v4.2.0-1-g"))
+        self.assertFalse(B.manager_tag_info(source)["restored"])
+
+    def test_wrong_existing_historical_tag_is_never_overwritten(self):
+        source, _, head = self.manager_history()
+        B.run(["git", "-C", source, "tag", "v4.2.0", head])
+        with self.assertRaisesRegex(ValueError, "points to a different commit"):
+            B.manager_tag_info(source, restore_missing=True)
+        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "refs/tags/v4.2.0^{commit}"]), head)
+
+    def test_historical_tag_with_missing_commit_or_nonancestor_stops(self):
+        source, _, head = self.manager_history()
+        with mock.patch.object(B, "MANAGER_TAG_SHA", "a" * 40):
+            with self.assertRaisesRegex(ValueError, "tag commit is missing"):
+                B.manager_tag_info(source, restore_missing=True)
+        B.run(["git", "-C", source, "checkout", "--orphan", "unrelated"])
+        B.run(["git", "-C", source, "commit", "--allow-empty", "-qm", "Keep unrelated ancestry separate"])
+        unrelated = B.run(["git", "-C", source, "rev-parse", "HEAD"])
+        B.run(["git", "-C", source, "checkout", "--detach", head])
+        with mock.patch.object(B, "MANAGER_TAG_SHA", unrelated):
+            with self.assertRaisesRegex(ValueError, "not an ancestor"):
+                B.manager_tag_info(source, restore_missing=True)
+        self.assertEqual(B.run(["git", "-C", source, "tag", "--list", "v4.2.0"]), "")
+
+    def test_historical_tag_wrong_distance_or_history_count_stops(self):
+        source, _, _ = self.manager_history(count=3)
+        with self.assertRaisesRegex(ValueError, "exactly one commit behind"):
+            B.manager_tag_info(source, restore_missing=True)
+        with mock.patch.object(B, "MANAGER_GIT_COUNT", 3715):
+            with self.assertRaisesRegex(ValueError, "original full upstream Git history"):
+                B.manager_tag_info(source, restore_missing=True)
+        self.assertEqual(B.run(["git", "-C", source, "tag", "--list", "v4.2.0"]), "")
+
+    def test_missing_historical_tag_is_not_restored_after_preparation(self):
+        _, work, target, dist = self.native_workspace()
+        B.run(["git", "-C", work / "source", "tag", "-d", "v4.2.0"])
+        with self.assertRaisesRegex(ValueError, "tag missing from the build checkout"):
+            B.verify_native(work, target, dist)
+        self.assertEqual(B.run(["git", "-C", work / "source", "tag", "--list", "v4.2.0"]), "")
         self.assertFalse(dist.exists())
 
 

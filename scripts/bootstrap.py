@@ -29,6 +29,9 @@ REPO = Path(__file__).resolve().parents[1]
 COMMON_SHA = "f4321180a3973d19b626b3eef51871199e4e1fac"
 MANAGER_SHA = "904c60d18f026340ce38ca2d5a1da529aadcba1a"
 MANAGER_URL = "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"
+MANAGER_TAG = "v4.2.0"
+MANAGER_TAG_SHA = "85eb4a95b8a61d756ecf53b9c5785e48e1b15039"
+MANAGER_GIT_COUNT = 3715
 NDK_SHA = "93532f3052c14fbb337ff57d5732128dc7481ee6"
 NDK_URL = "https://android.googlesource.com/toolchain/prebuilts/ndk/r23"
 PRIVATE_NAMES = {"signing_key.pem", "adbkey", "id_rsa", "id_ed25519"}
@@ -304,6 +307,36 @@ def prepare_kernel(workspace, cache, mirror_root=None):
             "source_epoch": 1776217181, "source_timestamp": "Tue, 14 Apr 2026 18:39:41 -0700"}
 
 
+def manager_tag_info(source, restore_missing=False):
+    require(run(["git", "-C", source, "rev-parse", "HEAD"]) == MANAGER_SHA,
+            "Native upstream checkout changed")
+    count = int(run(["git", "-C", source, "rev-list", "--count", "HEAD"]))
+    require(count == MANAGER_GIT_COUNT,
+            "Native build requires the original full upstream Git history")
+    try:
+        historical = run(["git", "-C", source, "rev-parse", MANAGER_TAG_SHA + "^{commit}"])
+    except RuntimeError as error:
+        raise ValueError("Pinned historical Manager tag commit is missing") from error
+    require(historical == MANAGER_TAG_SHA, "Historical Manager tag commit changed")
+    try:
+        run(["git", "-C", source, "merge-base", "--is-ancestor", historical, "HEAD"])
+    except RuntimeError as error:
+        raise ValueError("Historical Manager tag commit is not an ancestor of the pinned HEAD") from error
+    distance = int(run(["git", "-C", source, "rev-list", "--count", historical + "..HEAD"]))
+    require(distance == 1, "Historical Manager tag must be exactly one commit behind the pinned HEAD")
+    ref = "refs/tags/" + MANAGER_TAG
+    present = ref in run(["git", "-C", source, "for-each-ref", "--format=%(refname)", ref]).splitlines()
+    if present:
+        require(run(["git", "-C", source, "rev-parse", ref + "^{commit}"]) == historical,
+                "Existing historical Manager tag points to a different commit")
+    else:
+        require(restore_missing, "Pinned historical Manager tag missing from the build checkout")
+        # Upstream removed this historical tag. Restore only this validated ref
+        # in the owned build checkout; never rewrite an existing tag or remote.
+        run(["git", "-C", source, "tag", MANAGER_TAG, historical])
+    return {"name": MANAGER_TAG, "commit": historical, "distance": distance, "restored": not present}
+
+
 def prepare_native(workspace, cache, mirror_root=None):
     ci_source = ci_source_info()
     require(not ci_source["local_validation_only"],
@@ -312,6 +345,7 @@ def prepare_native(workspace, cache, mirror_root=None):
     source_cache = git_cache(MANAGER_URL, MANAGER_SHA, cache, full_history=True, mirror=manager_mirror)
     source = workspace / "source"
     checkout(source_cache, MANAGER_SHA, source)
+    historical_tag = manager_tag_info(source, restore_missing=True)
     copy_overlay(REPO / "src/SukiSU", source)
     declarations = json.loads((REPO / "configs/source-links.json").read_text())["manager_links"]
     # Upstream checkout already has these links; replace with the declared targets.
@@ -328,7 +362,7 @@ def prepare_native(workspace, cache, mirror_root=None):
     require(inputs["ci_source"] == ci_source, "CI repository inputs changed during native assembly")
     return {"kind": "native", "manager_sha": MANAGER_SHA, "git_count": count,
             "git_describe": describe, "version_code": 40000 - 2815 + count,
-            "ndk_sha": NDK_SHA, "android_api": 26, "inputs": inputs}
+            "historical_tag": historical_tag, "ndk_sha": NDK_SHA, "android_api": 26, "inputs": inputs}
 
 
 def native_inputs(workspace):
@@ -336,8 +370,8 @@ def native_inputs(workspace):
     require(not ci_source["local_validation_only"],
             "Native builds require a clean committed development checkout")
     source = workspace / "source"
-    require(run(["git", "-C", source, "rev-parse", "HEAD"]) == MANAGER_SHA,
-            "Native upstream checkout changed")
+    historical_tag = manager_tag_info(source)
+    historical_tag.pop("restored")
     count = int(run(["git", "-C", source, "rev-list", "--count", "HEAD"]))
     describe = run(["git", "-C", source, "describe", "--tags", "--always"])
     require(count == 3715 and describe == "v4.2.0-1-g904c60d1",
@@ -353,7 +387,8 @@ def native_inputs(workspace):
     spec.loader.exec_module(helper)
     return {"ci_source": ci_source, "native_source": helper.tree_manifest(source),
             "manager_sha": MANAGER_SHA, "git_count": count, "git_describe": describe,
-            "version_code": 40000 - 2815 + count, "ndk_sha": NDK_SHA, "android_api": 26}
+            "historical_tag": historical_tag, "version_code": 40000 - 2815 + count,
+            "ndk_sha": NDK_SHA, "android_api": 26}
 
 
 def verify_native_inputs(workspace, before_build=False):
@@ -362,6 +397,9 @@ def verify_native_inputs(workspace, before_build=False):
             and isinstance(report.get("inputs"), dict), "Native assembly input snapshot missing")
     current = native_inputs(workspace)
     require(current == report["inputs"], "Native build inputs changed since workspace assembly")
+    tag = report.get("historical_tag", {})
+    require({key: value for key, value in tag.items() if key != "restored"} == current["historical_tag"]
+            and isinstance(tag.get("restored"), bool), "Native historical tag restoration record missing or changed")
     record = workspace / "native-build-inputs.json"
     if before_build:
         require(not record.exists(), "Native build input snapshot already exists")
@@ -433,6 +471,7 @@ def verify_native(workspace, target_dir, dist):
             "version_code": inputs["after"]["version_code"], "version_name": "4.2.0-1-g904c60d1", "android_api": 26,
             "rustc": rustc, "ndk_revision": "23.1.7779620", "ndk_sha": NDK_SHA,
             "source_inputs": inputs,
+            "historical_tag": json.loads((workspace / "bootstrap.json").read_text())["historical_tag"],
             "uapi_version": 2, "profile_version": 4, "profile_bytes": 784,
             "uapi_compared_values": len(actual), "uapi_all_equal": True,
             "artifact_sha256": sha256(final), "artifact_bytes": final.stat().st_size,

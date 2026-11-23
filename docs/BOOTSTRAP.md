@@ -21,6 +21,13 @@ Manager 原生程序源码和 NDK，保留真实 Git 历史及 40900 版本计�
 不修改 `Cargo.lock`。Cargo 输出中的原始版本、ARM64 ELF、Android API 26 与
 Rust 1.91.1 生成的 144 项 Rust/C UAPI 比较都通过后才导出。
 
+上游已删除历史 `v4.2.0` tag。CI 只在自己的 Manager checkout 中将它恢复为
+固定 commit `85eb4a95b8a61d756ecf53b9c5785e48e1b15039`：必须验证该 commit
+存在、是固定 HEAD `904c60d1` 的祖先、距离恰为 1，且实际完整历史计数为
+3715。若已有同名 tag 指向其他 commit，则立即拒绝，不覆盖；构建开始后若
+tag 消失也拒绝。恢复记录随原生 metadata 发布，`build.rs` 的 Git 版本计算
+保持原样，不修改上游或远程 tag。
+
 `native-build-info.json` 的外部记录将 `libksud.so` 与完成的原生 ZIP 分别绑定到
 字节数和 SHA256，并保留 Cargo 前后的源码快照。ZIP 内部的同名记录只绑定
 原生程序，避免 ZIP 哈希的循环引用；ZIP 完成后才写外部记录和 `SHA256SUMS`。

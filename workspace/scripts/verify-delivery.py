@@ -222,7 +222,10 @@ def verify_image(root):
             'Delivered Manager headers differ from build identity')
     require(all(hashes.get(name) == digest for name, digest in uapi['header_sha256']['manager'].items()),
             'UAPI comparison used different Manager headers')
-    require(uapi.get('compared_shared_ioctl_constants') == 31
+    count = uapi.get('compared_shared_ioctl_constants')
+    require(type(count) is int and count > 0
+            and uapi.get('compatibility_rule') == 'shared-interfaces-equal'
+            and uapi.get('shared_interfaces_all_equal') is True
             and uapi.get('arm64_values_all_equal') is True
             and uapi.get('profile_version') == 4, 'Incomplete Manager UAPI validation')
     return release

@@ -53,13 +53,20 @@ class ExportTests(unittest.TestCase):
         (module / "module.prop").write_text("id=susfs4ksu\n")
         (module / "service.sh").write_text("#!/bin/sh\nexit 0\n")
         (module / "service.sh").chmod(0o755)
+        (module / "customize.sh").write_bytes(b"PINNED_TOOL_SHA=@KSU_SUSFS_SHA256@\n")
+        (module / "susfs-bin-check.sh").write_bytes(b"expected=@KSU_SUSFS_SHA256@\n")
         self.module = module
+        self.tool = self.work / "upstream/susfs-tool/ksu_susfs"
+        self.tool.parent.mkdir(parents=True)
+        self.tool.write_bytes(b"\x7fELF fixture helper")
         (self.release / "configs").mkdir()
         headers = self.work / "upstream/manager-uapi"
         headers.mkdir(parents=True)
         (headers / "supercall.h").write_bytes(b"fixture header\n")
         identity = dict(E.IDENTITY, actual_kernel_version=E.IDENTITY["kernel_version"],
-                        manager_uapi_sha256={"supercall.h": digest(headers / "supercall.h")})
+                        manager_uapi_sha256={"supercall.h": digest(headers / "supercall.h")},
+                        ksu_susfs={"sha256": digest(self.tool), "bytes": self.tool.stat().st_size,
+                                   "ndk_commit": E.IDENTITY["ndk_commit"]})
         (self.release / "configs/build-identity.json").write_bytes(json.dumps(identity).encode())
         (self.release / "reports/uapi").mkdir(parents=True)
         (self.release / "reports/uapi/complete-uapi-alignment.json").write_bytes(
@@ -105,15 +112,46 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(result["source_sha"], "a" * 40)
         metadata = json.loads((dist / "kernel-build-info.json").read_bytes())
         self.assertEqual(metadata["uapi"]["manager_only_ioctl_constants"], ["KSU_IOCTL_MANAGER_TEST"])
+        tool_sha = digest(self.tool)
+        self.assertEqual(metadata["ksu_susfs"], {
+            "sha256": tool_sha, "bytes": self.tool.stat().st_size, "ndk_commit": E.IDENTITY["ndk_commit"],
+            "susfs_commit": E.IDENTITY["susfs_commit"], "module_path": "tools/ksu_susfs_arm64"})
         with zipfile.ZipFile(dist / E.MODULE_ZIP) as archive:
             self.assertEqual(archive.read("service.sh"), (self.module / "service.sh").read_bytes())
             zip_mode = (archive.getinfo("service.sh").external_attr >> 16) & 0o777
             self.assertEqual(zip_mode, (self.module / "service.sh").stat().st_mode & 0o777)
             if os.name == "posix":
                 self.assertEqual(zip_mode, 0o755)
+            self.assertEqual(archive.read("tools/ksu_susfs_arm64"), self.tool.read_bytes())
+            self.assertEqual((archive.getinfo("tools/ksu_susfs_arm64").external_attr >> 16) & 0o777, 0o755)
+            self.assertEqual(archive.read("customize.sh"), f"PINNED_TOOL_SHA={tool_sha}\n".encode())
+            self.assertEqual(archive.read("susfs-bin-check.sh"), f"expected={tool_sha}\n".encode())
+            self.assertEqual(archive.namelist(), ["customize.sh", "module.prop", "service.sh",
+                                                  "susfs-bin-check.sh", "tools/ksu_susfs_arm64"])
         for line in (dist / "SHA256SUMS").read_text().splitlines():
             expected, name = line.split("  ", 1)
             self.assertEqual(digest(dist / name), expected)
+
+    def test_module_source_must_not_carry_its_own_helper(self):
+        (self.module / "tools").mkdir()
+        (self.module / "tools/ksu_susfs_arm64").write_bytes(b"prebuilt helper")
+        self.refresh_source_attestation()
+        with self.assertRaisesRegex(ValueError, "own SUSFS helper"):
+            self.export()
+        self.assertFalse((self.root / "dist").exists())
+
+    def test_installer_must_pin_the_ci_helper(self):
+        (self.module / "customize.sh").write_bytes(b"PINNED_TOOL_SHA=" + b"0" * 64 + b"\n")
+        self.refresh_source_attestation()
+        with self.assertRaisesRegex(ValueError, "does not pin"):
+            self.export()
+        self.assertFalse((self.root / "dist").exists())
+
+    def test_build_identity_must_describe_the_shipped_helper(self):
+        self.tool.write_bytes(b"\x7fELF helper replaced after bootstrap")
+        with self.assertRaisesRegex(ValueError, "repository lock"):
+            self.export()
+        self.assertFalse((self.root / "dist").exists())
 
     def test_failed_report_rejected_before_output(self):
         (self.reports / "post-regressions.json").write_text(json.dumps({"passed": False}))

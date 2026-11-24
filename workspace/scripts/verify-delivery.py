@@ -360,6 +360,8 @@ def verify_delivery(root):
     tool = (root / 'tools/ksu_susfs').read_bytes()
     require(tool[:6] == b'\x7fELF\x02\x01' and struct.unpack_from('<H', tool, 18)[0] == 183,
             'SUSFS tool is not ELF64 AArch64')
+    require(hashlib.sha256(tool).hexdigest() == identity['ksu_susfs']['sha256']
+            and len(tool) == identity['ksu_susfs']['bytes'], 'SUSFS tool differs from the build identity')
     spec = importlib.util.spec_from_file_location('delivery_build_provenance', root / 'scripts/build_provenance.py')
     provenance = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(provenance)

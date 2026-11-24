@@ -21,7 +21,7 @@ class IdentityTests(unittest.TestCase):
     def test_locked_public_names(self):
         expected = {
             "kernel_zip": "Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r3_AnyKernel3.zip",
-            "module_zip": "SUSFS_R28_Fuxi230_40900_local2.zip",
+            "module_zip": "SUSFS_R28_Fuxi230_40900_local3.zip",
             "native_zip": "Fuxi_SukiSU_40900_Zygisk_StatusFix.zip",
             "kernel_string": "Fuxi GKI 5.15.194 - SukiSU 40900 + SUSFS 2.3.0 r3",
             "builtin_archive": "builtin-e2912817.tar.gz",

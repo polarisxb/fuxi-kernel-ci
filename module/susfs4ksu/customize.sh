@@ -52,32 +52,21 @@ susfs4ksu_config_check() {
 ksuver=$(${KSU_BIN} debug version | awk '{print $3}')
 [ "$ksuver" = "40900" ] || abort "[!] This local package requires driver 40900."
 PINNED_TOOL="${TMPDIR}/susfs/tools/ksu_susfs_arm64"
-PINNED_TOOL_SHA=8b9fa0174ab9bc95910258f935628dfb9b551ae9b5074ba0eb1fa85e06590641
+PINNED_TOOL_SHA=@KSU_SUSFS_SHA256@
 actual_sha=$(sha256sum "$PINNED_TOOL" | awk '{print $1}')
 [ "$actual_sha" = "$PINNED_TOOL_SHA" ] || abort "[!] Pinned SUSFS helper checksum mismatch."
 chmod 755 "$PINNED_TOOL" || abort "[!] Cannot make pinned helper executable."
 SUSFS_VERSION_RAW=$("$PINNED_TOOL" show version) || abort "[!] Cannot query SUSFS."
 [ "$SUSFS_VERSION_RAW" = "v2.3.0" ] || abort "[!] This local package requires SUSFS v2.3.0."
-SUSFS_DECIMAL_MAIN=2
 ui_print "[-] Verified driver $ksuver and SUSFS $SUSFS_VERSION_RAW"
 cp -f "$PINNED_TOOL" "$DEST_BIN_DIR/ksu_susfs" || abort "[!] Cannot install pinned helper."
 chmod 755 "$DEST_BIN_DIR/ksu_susfs" || abort "[!] Cannot set helper permissions."
 installed_sha=$(sha256sum "$DEST_BIN_DIR/ksu_susfs" | awk '{print $1}')
 [ "$installed_sha" = "$PINNED_TOOL_SHA" ] || abort "[!] Installed helper checksum mismatch."
-ui_print "[-] Installed verified R28 helper; online binary replacement disabled."
+ui_print "[-] Installed the helper built from the kernel's SUSFS source; online binary replacement disabled."
 
 # cleanup
 rm -f ${MODPATH}/ksu_susfs_remote > /dev/null 2>&1
-
-# copy sus_su over
-if [ -n "$SUSFS_DECIMAL_MAIN" ] && [ "$SUSFS_DECIMAL_MAIN" -ge 2 ]; then
-	ui_print "[!] Susfs version v2.0.0+ detected, sus_su is deprecated"
-	ui_print "[-] Skipping sus_su installation"
-else
-	ui_print "[-] Installing sus_su"
-	cp ${TMPDIR}/susfs/tools/sus_su_arm64 ${DEST_BIN_DIR}/sus_su
-	chmod 755 ${DEST_BIN_DIR}/ksu_susfs ${DEST_BIN_DIR}/sus_su
-fi
 
 # set permissions
 chmod 644 ${MODPATH}/post-fs-data.sh ${MODPATH}/post-mount.sh ${MODPATH}/service.sh ${MODPATH}/boot-completed.sh ${MODPATH}/action.sh ${MODPATH}/uninstall.sh ${MODPATH}/susfs-bin-update.sh ${MODPATH}/susfs_reset.sh

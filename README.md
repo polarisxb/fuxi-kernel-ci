@@ -17,7 +17,7 @@ HWCAP。r2 曾在 fuxi 的 OS3.0.309.0.WMCCNXM 上通过启动、Root、屏幕/�
 | `patches/common/` | 对内核的改动，在官方 SUSFS 补丁之后按 `series` 顺序应用 |
 | `patches/driver/` | 对 SukiSU builtin 驱动的改动 |
 | `patches/manager/` | 对 SukiSU Manager / ksud 的改动（Zygisk Next 状态检测） |
-| `module/susfs4ksu/` | SUSFS local2 模块源码 |
+| `module/susfs4ksu/` | SUSFS local3 模块源码（`ksu_susfs` 工具由 CI 从锁定的 SUSFS 源码编译后打包） |
 | `workspace/scripts/` | 构建、来源绑定、接口/模块/交付验证 |
 | `configs/`、`reference/` | 构建配置、公开校验输入引用与链接声明 |
 | `.github/workflows/` | 自动构建和公开产物发布 |

@@ -6,7 +6,7 @@ import hashlib
 import importlib.util
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import zipfile
@@ -42,32 +42,57 @@ def load_verifier(workspace):
     return module
 
 
-def package_module(workspace, destination):
+MODULE_TOOL = "tools/ksu_susfs_arm64"
+TOOL_DIGEST_PLACEHOLDER = b"@KSU_SUSFS_SHA256@"
+
+
+def susfs_tool_record(workspace):
+    tool = workspace / "upstream/susfs-tool/ksu_susfs"
+    return {"sha256": sha256(tool), "bytes": tool.stat().st_size, "ndk_commit": IDENTITY["ndk_commit"]}
+
+
+def module_contents(workspace):
+    """Module files as shipped: the sources plus the CI-built helper, its digest filled in."""
     module = workspace / "module/susfs4ksu"
     entries = sorted(module.rglob("*"))
     require(not any(path.is_symlink() for path in entries), "Module source contains an unexpected symlink")
     paths = [path for path in entries if path.is_file()]
     require(paths and (module / "module.prop").is_file(), "SUSFS module source missing")
+    tool = (workspace / "upstream/susfs-tool/ksu_susfs").read_bytes()
+    digest = hashlib.sha256(tool).hexdigest().encode()
+    contents = {}
+    for path in paths:
+        name = path.relative_to(module).as_posix()
+        require(path.suffix.lower() not in {".pem", ".key"}, "Module contains a private key filename")
+        data = path.read_bytes()
+        require(b"PRIVATE KEY-----" not in data[:16384], "Module contains private key material")
+        contents[name] = (data.replace(TOOL_DIGEST_PLACEHOLDER, digest), stat.S_IMODE(path.stat().st_mode))
+    require(MODULE_TOOL not in contents, "The module source must not carry its own SUSFS helper")
+    require(TOOL_DIGEST_PLACEHOLDER in (module / "customize.sh").read_bytes(),
+            "customize.sh does not pin the CI-built SUSFS helper")
+    contents[MODULE_TOOL] = (tool, 0o755)
+    return contents
+
+
+def package_module(workspace, destination):
+    contents = module_contents(workspace)
+    # PurePosixPath order keeps the source entries in the order of a sorted directory walk.
+    names = sorted(contents, key=PurePosixPath)
     with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-        for path in paths:
-            require(not path.is_symlink(), "Module source contains an unexpected symlink")
-            name = path.relative_to(module).as_posix()
-            require(path.suffix.lower() not in {".pem", ".key"}, "Module contains a private key filename")
-            data = path.read_bytes()
-            require(b"PRIVATE KEY-----" not in data[:16384], "Module contains private key material")
+        for name in names:
+            data, mode = contents[name]
             entry = zipfile.ZipInfo(name, (2026, 1, 1, 0, 0, 0))
             entry.create_system = 3
-            mode = stat.S_IMODE(path.stat().st_mode)
             entry.external_attr = (stat.S_IFREG | mode) << 16
             entry.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(entry, data)
+    current = module_contents(workspace)
     with zipfile.ZipFile(destination) as archive:
         require(archive.testzip() is None, "Module ZIP CRC failed")
-        require(set(archive.namelist()) == {path.relative_to(module).as_posix() for path in paths},
+        require(archive.namelist() == sorted(current, key=PurePosixPath),
                 "Module ZIP file list differs from its sources")
-        for path in paths:
-            require(archive.read(path.relative_to(module).as_posix()) == path.read_bytes(),
-                    "Module ZIP differs from the tested source")
+        for name in names:
+            require(archive.read(name) == current[name][0], "Module ZIP differs from the tested source")
 
 
 def verify_ci_source(workspace, release_root, source_sha):
@@ -84,7 +109,7 @@ def verify_ci_source(workspace, release_root, source_sha):
     manager_headers = workspace / "upstream/manager-uapi"
     header_hashes = {path.name: sha256(path) for path in manager_headers.glob("*.h")}
     expected_identity = dict(IDENTITY, actual_kernel_version=IDENTITY["kernel_version"],
-                             manager_uapi_sha256=header_hashes)
+                             manager_uapi_sha256=header_hashes, ksu_susfs=susfs_tool_record(workspace))
     require(header_hashes and json.loads(identity_path.read_bytes()) == expected_identity,
             "Delivered build identity differs from the repository lock")
     require(provenance["inputs"]["configs"].get("build-identity.json") == {
@@ -157,6 +182,8 @@ def export(workspace, dist, reports):
             "kernel_release": (release_root / "kernel.release").read_text().strip(),
             "image_sha256": sha256(release_root / "Image"),
             "uapi": {"manager_only_ioctl_constants": manager_only},
+            "ksu_susfs": dict(susfs_tool_record(workspace), susfs_commit=IDENTITY["susfs_commit"],
+                              module_path=MODULE_TOOL),
             "public_certificate_sha256": sha256(release_root / "public-certificates/signing_key.x509"),
             "driver_version": IDENTITY["driver_version"],
             "manager_version": IDENTITY["manager_version_code"],

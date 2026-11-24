@@ -1,7 +1,7 @@
 id=susfs4ksu
 name=SUSFS-FOR-KERNELSU (Fuxi 2.3.0 local)
-version=v1.5.2-R28-fuxi230-local2
-versionCode=105002029
+version=v1.5.2-R28-fuxi230-local3
+versionCode=105002030
 author=sidex15 & simonpunk
 description=An addon root hiding service for KernelSU compiled with patched kernel source.
 banner=banner.png

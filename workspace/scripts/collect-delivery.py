@@ -67,7 +67,7 @@ def dependencies(root):
         'avbtool': root / 'kernel/prebuilts/kernel-build-tools/linux-x86/bin/avbtool',
         'objcopy': root / 'kernel/prebuilts/clang/host/linux-x86/clang-r450784e/bin/llvm-objcopy',
         'objcopy_runtime': root / 'kernel/prebuilts/clang/host/linux-x86/clang-r450784e/lib64/libc++.so.1',
-        'susfs_tool': root / 'tools/ksu_susfs',
+        'susfs_tool': root / 'upstream/susfs-tool/ksu_susfs',
         'common_patch': root / 'patches/common-final.diff',
         'ksu_patch': root / 'patches/sukisu-final.diff',
         'readme': root / 'scripts/README.template.md',
@@ -91,6 +91,8 @@ def preflight(root, inputs):
     identity = V.read_identity(root)
     V.require(V.sha256(inputs['apk']) == identity['apk_sha256'], 'Unexpected official Manager APK')
     V.require(V.sha256(inputs['stock']) == STOCK_SHA, 'Unexpected stock boot input')
+    V.require(V.sha256(inputs['susfs_tool']) == identity['ksu_susfs']['sha256'],
+              'SUSFS helper differs from the one bootstrap built')
     V.require(V.sha256(inputs['baseline_cert']) == V.sha256(out / 'certs/signing_key.x509'),
               'Build signing certificate differs from the locked baseline')
     head = V.run(['git', '-C', root / 'kernel/common', 'rev-parse', 'HEAD']).decode().strip()

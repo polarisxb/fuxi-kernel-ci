@@ -18,7 +18,7 @@ git config core.autocrlf false
 - `patches/common`、`patches/driver`、`patches/manager`：本项目自己的改动，
   每个目录一个按顺序应用的补丁队列（`series`）。每个补丁头写明原因
   （`Subject:`）、上游状态（`Upstream-Status:`）和何时可以删除（`Drop-when:`）。
-- `module/susfs4ksu/`：SUSFS local2 模块源码（phase 3 再改为补丁队列）。
+- `module/susfs4ksu/`：SUSFS local3 模块源码（phase 3B 再改为补丁队列）。
 
 CI 每次按"上游 → 官方 SUSFS 补丁 → 补丁队列"现场组装完整源码。上游更新时
 只需要改 pin，再看哪个补丁打不上；不需要重新导入整棵源码树。

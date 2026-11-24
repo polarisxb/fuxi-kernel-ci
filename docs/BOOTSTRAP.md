@@ -55,7 +55,13 @@ tag 消失也拒绝。恢复记录随原生 metadata 发布，`build.rs` 的 Git
 1. `kernel/common`：manifest 固定的 AOSP checkout。
 2. SUSFS：按 `upstreams.susfs` 的 commit 从 GitLab 获取，复制 `kernel_files`
    （`fs/susfs.c` 与两个头文件），再用 `git apply` 严格应用官方
-   `50_add_susfs_in_gki-android13-5.15.patch`。
+   `50_add_susfs_in_gki-android13-5.15.patch`。同一个检出里的 `ksu_susfs/` 复制到
+   `upstream/susfs-tool/src`，用 manifest 固定的 NDK r23 运行 `ndk-build` 编译；产物
+   `upstream/susfs-tool/ksu_susfs` 必须是 AArch64 ELF64，`NEEDED` 只允许 Bionic 的
+   `libc.so`、`libdl.so`、`libm.so`、`liblog.so`。它的 SHA-256、字节数和 NDK 提交记入构建身份的
+   `ksu_susfs`。交付包的 `tools/ksu_susfs` 与模块 ZIP 的 `tools/ksu_susfs_arm64` 都是这个文件；
+   打包时把它的 SHA-256 填进模块 `customize.sh` 与 `susfs-bin-check.sh` 的 `@KSU_SUSFS_SHA256@`，
+   `kernel-build-info.json` 的 `ksu_susfs` 记录同一个摘要。
 3. `.scmversion`：由 `kernel_release` 生成，并校验它以本树 Makefile 的版本开头、
    包含 common commit 前 12 位。
 4. `patches/common/series`：本仓库对内核的改动，按顺序严格应用（无 fuzz）。

@@ -359,6 +359,22 @@ class SourceTests(unittest.TestCase):
         self.assertIn("https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/" + "b" * 40 + "/kernel/missing.c", calls)
         self.assertIn("https://gitlab.com/simonpunk/susfs4ksu/-/raw/" + "d" * 40 + "/kernel_patches/fs/susfs.c", calls)
 
+    def test_fetch_overrides_the_pin_at_every_endpoint(self):
+        self.fetch_patch.stop()
+        head = "1" * 40
+        with patch.object(S, "urlopen", return_value=io.BytesIO(b"head")) as transport:
+            self.assertEqual(S.fetch("driver", "kernel/test.c", commit=head), b"head")
+        self.assertIn(f"/{head}/kernel/test.c", transport.call_args.args[0].full_url)
+        layout = S.layout()
+        layout["upstreams"]["driver"]["backup_urls"] = ["https://github.com/backup/SukiSU-Ultra.git"]
+        with patch.object(S, "layout", return_value=layout):
+            for name in ("driver", "common", "susfs"):
+                endpoints = S.raw_urls(name, "a b.c", commit=head)
+                self.assertTrue(all(f"/{head}/a%20b.c" in url for url, _ in endpoints))
+            self.assertEqual(len(S.raw_urls("driver", "x", commit=head)), 2)
+            with self.assertRaisesRegex(ValueError, "commit SHA"):
+                S.fetch("driver", "x", commit="main")
+
     def test_fetch_reads_a_backup_after_the_upstream_lost_the_file(self):
         self.fetch_patch.stop()
         layout = json.loads((self.root / "ci-layout.json").read_bytes())

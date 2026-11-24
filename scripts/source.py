@@ -72,10 +72,13 @@ def logical_path(value):
     return queue, Q.safe_relative(path)
 
 
-def raw_urls(name, path):
-    """Pinned raw-file URLs for one upstream, then its backups; only known hosts are contacted."""
+def raw_urls(name, path, *, commit=None):
+    """Raw-file URLs at one revision (default: the pin), then its backups."""
     info = layout()["upstreams"][name]
-    sha, encoded = info["commit"], quote(path, safe="/")
+    sha = info["commit"] if commit is None else commit
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise ValueError("Expected a full upstream commit SHA")
+    encoded = quote(path, safe="/")
     if name == "common":
         return [(f"https://raw.githubusercontent.com/aosp-mirror/kernel_common/{sha}/{encoded}", False),
                 (f"https://android.googlesource.com/kernel/common/+/{sha}/{encoded}?format=TEXT", True)]
@@ -90,9 +93,9 @@ def raw_urls(name, path):
     return urls
 
 
-def fetch(name, path):
-    """Return the pinned upstream file, or None when the commit does not have it."""
-    for url, encoded_body in raw_urls(name, path):
+def fetch(name, path, *, commit=None):
+    """Return the requested upstream file, or None when the commit does not have it."""
+    for url, encoded_body in raw_urls(name, path, commit=commit):
         try:
             with urlopen(Request(url, headers={"User-Agent": "fuxi-kernel-ci-source"}), timeout=60) as response:
                 data = response.read(32 * 1024 * 1024 + 1)

@@ -250,6 +250,7 @@ def collect(root):
                 elif path.name == 'uapi':
                     shutil.copytree(path, stage / 'reports/uapi')
             shutil.copytree(reports / 'offline', stage / 'reports/offline')
+            shutil.copytree(root / 'upstream/manager-uapi', stage / 'reports/uapi/manager-headers')
             for path in sorted((root / 'logs').glob('*.log')):
                 copy(path, stage / 'logs' / path.name)
             readme = inputs['readme'].read_text(encoding='utf-8').format_map(build_identity)

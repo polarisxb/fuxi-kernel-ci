@@ -20,6 +20,7 @@ class UapiTests(unittest.TestCase):
         (self.root / 'scripts').mkdir()
         shutil.copy2(SOURCE / 'scripts/verify-uapi.py', self.root / 'scripts/verify-uapi.py')
         shutil.copytree(SOURCE / 'configs', self.root / 'configs')
+        shutil.copytree(SOURCE / 'upstream/manager-uapi', self.root / 'upstream/manager-uapi')
         headers = self.root / 'kernel/KernelSU/kernel/include/uapi'
         shutil.copytree(SOURCE / 'kernel/KernelSU/kernel/include/uapi', headers)
         (self.root / 'kernel/prebuilts').symlink_to((SOURCE / 'kernel/prebuilts').resolve(), target_is_directory=True)
@@ -35,13 +36,13 @@ class UapiTests(unittest.TestCase):
         return result
 
     def replace_manager_fixture(self, old, new):
-        header = self.root / 'configs/manager40900-uapi/supercall.h'
+        header = self.root / 'upstream/manager-uapi/supercall.h'
         data = header.read_bytes()
         self.assertIn(old, data)
         header.write_bytes(data.replace(old, new, 1))
-        manifest = self.root / 'configs/manager40900-uapi.json'
+        manifest = self.root / 'configs/build-identity.json'
         identity = json.loads(manifest.read_bytes())
-        identity['sha256'][header.name] = hashlib.sha256(header.read_bytes()).hexdigest()
+        identity['manager_uapi_sha256'][header.name] = hashlib.sha256(header.read_bytes()).hexdigest()
         manifest.write_bytes(json.dumps(identity).encode())
 
     def test_matching_headers_pass_in_both_modes(self):

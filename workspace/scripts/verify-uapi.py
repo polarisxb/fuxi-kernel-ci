@@ -9,11 +9,9 @@ D=ROOT/'reports/uapi';D.mkdir(parents=True,exist_ok=True)
 (D/'complete-uapi-alignment.json').unlink(missing_ok=True)
 IDENTITY=json.loads((ROOT/'configs/build-identity.json').read_bytes())
 KERNEL=ROOT/'kernel/KernelSU/kernel/include/uapi'
-MANAGER=ROOT/'configs/manager40900-uapi'
-manager_manifest=json.loads((ROOT/'configs/manager40900-uapi.json').read_text())
-require(manager_manifest['source_sha']==IDENTITY['manager_commit'], 'Manager header snapshot differs from locked source')
-for name,expected in manager_manifest['sha256'].items():
- require(hashlib.sha256((MANAGER/name).read_bytes()).hexdigest()==expected, ('Manager header changed',name))
+MANAGER=ROOT/'upstream/manager-uapi'
+manager_hashes={path.name:hashlib.sha256(path.read_bytes()).hexdigest() for path in MANAGER.glob('*.h')}
+require(manager_hashes==IDENTITY['manager_uapi_sha256'] and manager_hashes, 'Manager headers differ from build identity')
 require(MANAGER.resolve()!=KERNEL.resolve(), 'UAPI self-comparison is forbidden')
 CLANG=str(ROOT/'kernel/prebuilts/clang/host/linux-x86/clang-r450784e/bin/clang')
 headers={}

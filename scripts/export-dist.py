@@ -81,7 +81,11 @@ def verify_ci_source(workspace, release_root, source_sha):
     require(provenance["inputs"]["configs"].get("ci-source.json") == expected,
             "CI source identity is not bound to the successful compilation")
     identity_path = release_root / "configs/build-identity.json"
-    require(json.loads(identity_path.read_bytes()) == dict(IDENTITY, actual_kernel_version=IDENTITY["kernel_version"]),
+    manager_headers = workspace / "upstream/manager-uapi"
+    header_hashes = {path.name: sha256(path) for path in manager_headers.glob("*.h")}
+    expected_identity = dict(IDENTITY, actual_kernel_version=IDENTITY["kernel_version"],
+                             manager_uapi_sha256=header_hashes)
+    require(header_hashes and json.loads(identity_path.read_bytes()) == expected_identity,
             "Delivered build identity differs from the repository lock")
     require(provenance["inputs"]["configs"].get("build-identity.json") == {
         "type": "file", "sha256": sha256(identity_path),

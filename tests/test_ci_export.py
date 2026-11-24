@@ -55,7 +55,11 @@ class ExportTests(unittest.TestCase):
         (module / "service.sh").chmod(0o755)
         self.module = module
         (self.release / "configs").mkdir()
-        identity = dict(E.IDENTITY, actual_kernel_version=E.IDENTITY["kernel_version"])
+        headers = self.work / "upstream/manager-uapi"
+        headers.mkdir(parents=True)
+        (headers / "supercall.h").write_bytes(b"fixture header\n")
+        identity = dict(E.IDENTITY, actual_kernel_version=E.IDENTITY["kernel_version"],
+                        manager_uapi_sha256={"supercall.h": digest(headers / "supercall.h")})
         (self.release / "configs/build-identity.json").write_bytes(json.dumps(identity).encode())
         (self.release / "reports").mkdir()
         self.refresh_source_attestation()

@@ -81,7 +81,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          printf '%s\n' "$$" | sudo tee /sys/fs/cgroup/fuxi-build/cgroup.procs >/dev/null
+          build_cgroup=/sys/fs/cgroup/fuxi-build
+          printf '%s\n' "$$" | sudo tee "$build_cgroup/cgroup.procs" >/dev/null
+          # A lost runner keeps no log, so the live log must already show how far memory got.
+          (
+            while sleep 120 </dev/null >/dev/null 2>&1; do
+              printf '[%s] build memory %s MiB, %s| swap used %s MiB\n' "$(date -u +%T)" \
+                "$(( $(cat "$build_cgroup/memory.current") / 1048576 ))" \
+                "$(grep -E '^(high|oom_kill) ' "$build_cgroup/memory.events" | tr '\n' ' ')" \
+                "$(free -m | awk '/^Swap:/ { print $3 }')"
+            done
+          ) &
+          monitor=$!
+          trap 'kill "$monitor" 2>/dev/null || true' EXIT
           bash scripts/ci-build.sh --workspace "$RUNNER_TEMP/fuxi-project" --dist "$GITHUB_WORKSPACE/dist/kernel"
       - name: Upload verified kernel distribution
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

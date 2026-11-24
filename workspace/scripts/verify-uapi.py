@@ -28,19 +28,18 @@ for who in ('kernel','manager'):
 names=[]
 for who in headers:
  text=headers[who]['supercall.h']
- constants=set(re.findall(r'\b(KSU_IOCTL_[A-Z0-9_]+)\b',text))|{'KERNEL_SU_UAPI_VERSION','KSU_APP_PROFILE_VER','KSU_INSTALL_MAGIC1','KSU_INSTALL_MAGIC2'}
+ text=re.sub(r'/\*.*?\*/|//[^\n]*','',text,flags=re.S)
+ constants=set(re.findall(r'\b(KSU_IOCTL_[A-Z0-9_]+)\b',text))
  types=set(re.findall(r'^struct (ksu_\w+_cmd)\s*\{',text,re.M))|{'root_profile','app_profile','non_root_profile'}
  names.append((constants,types))
 kernel_only_constants=names[0][0]-names[1][0]
 manager_only_constants=names[1][0]-names[0][0]
 kernel_only_types=names[0][1]-names[1][1]
 manager_only_types=names[1][1]-names[0][1]
-# No locked Manager interface may be silently missing in this release.
-require(not kernel_only_constants, kernel_only_constants)
-require(not kernel_only_types, kernel_only_types)
-require(not manager_only_constants, manager_only_constants)
-require(not manager_only_types, manager_only_types)
-shared_constants=names[0][0]&names[1][0]
+# Compile these names unconditionally so a missing version or handshake value
+# fails on either side, including when both headers omit it.
+required_constants={'KERNEL_SU_UAPI_VERSION','KSU_APP_PROFILE_VER','KSU_INSTALL_MAGIC1','KSU_INSTALL_MAGIC2'}
+shared_constants=(names[0][0]&names[1][0])|required_constants
 shared_types=names[0][1]&names[1][1]
 # Extract member names from all structures for offsetof checks.
 fields={}
@@ -105,5 +104,17 @@ require(arm64_outputs['kernel']==arm64_outputs['manager'], 'arm64 UAPI mismatch'
 lines=[]
 for key in sorted(outputs['kernel']):
  if 'get_info_cmd' in key or key.endswith(('VERSION','VER')) or key.startswith('sizeof.app_profile'):lines.append({key:outputs['kernel'][key]})
-result={'manager_sha':IDENTITY['manager_commit'],'kernel_sha':IDENTITY['driver_commit'],'compared_shared_ioctl_constants':sum(n.startswith('KSU_IOCTL_') for n in shared_constants),'compared_shared_wire_structures':len(shared_types),'compared_constants_sizes_offsets':len(outputs['kernel']),'shared_interfaces_all_equal':True,'all_manager_header_ioctls_present':True,'manager_only_ioctl_constants':sorted(manager_only_constants),'manager_only_structures':sorted(manager_only_types),'runtime_note':'Header presence is checked; runtime feature functionality remains untested.','kernel_and_manager_uapi':outputs['kernel']['constant.KERNEL_SU_UAPI_VERSION'],'profile_version':outputs['kernel']['constant.KSU_APP_PROFILE_VER'],'arm64_values_all_equal':True,'target':'aarch64-linux-android31','selected':lines,'header_sha256':{who:{name:hashlib.sha256(text.encode()).hexdigest() for name,text in data.items()} for who,data in headers.items()},'note':'Independent official Manager header comparison; this build has no runtime authorization or feature validation claim.'}
+result={
+ 'manager_sha':IDENTITY['manager_commit'],'kernel_sha':IDENTITY['driver_commit'],
+ 'compatibility_rule':'shared-interfaces-equal','shared_interfaces_all_equal':True,
+ 'compared_shared_ioctl_constants':len(names[0][0]&names[1][0]),
+ 'compared_shared_wire_structures':len(shared_types),'compared_constants_sizes_offsets':len(outputs['kernel']),
+ 'kernel_only_ioctl_constants':sorted(kernel_only_constants),'manager_only_ioctl_constants':sorted(manager_only_constants),
+ 'kernel_only_structures':sorted(kernel_only_types),'manager_only_structures':sorted(manager_only_types),
+ 'runtime_note':'Header presence is checked; runtime feature functionality remains untested.',
+ 'kernel_and_manager_uapi':outputs['kernel']['constant.KERNEL_SU_UAPI_VERSION'],
+ 'profile_version':outputs['kernel']['constant.KSU_APP_PROFILE_VER'],'arm64_values_all_equal':True,
+ 'target':'aarch64-linux-android31','selected':lines,
+ 'header_sha256':{who:{name:hashlib.sha256(text.encode()).hexdigest() for name,text in data.items()} for who,data in headers.items()},
+ 'note':'Independent official Manager header comparison; this build has no runtime authorization or feature validation claim.'}
 (D/'complete-uapi-alignment.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

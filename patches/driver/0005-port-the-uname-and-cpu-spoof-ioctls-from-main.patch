@@ -1,5 +1,5 @@
 Subject: Port the uname and CPU spoof ioctls from main 904c60d1
-Upstream-Status: Inappropriate [main has since renumbered SET_SPOOF_VERSION and removed SET_SPOOF_CPU]
+Upstream-Status: Inappropriate [main has since renumbered SET_SPOOF_VERSION and moved CPU spoof behind KSU_IOCTL_EXTENSION]
 Drop-when: phase 2, once the UAPI check accepts Manager-only ioctls
 
 workspace/scripts/verify-uapi.py requires the driver to expose every

@@ -1,6 +1,6 @@
 Subject: cpu_spoof: only spoof the reported MIDR
-Upstream-Status: Inappropriate [SET_SPOOF_CPU no longer exists upstream]
-Drop-when: together with the spoof ioctl port
+Upstream-Status: Pending [SukiSU-Nova main 1439545f kernel/extension/cpu_spoof.c still writes loops_per_jiffy and elf_hwcap]
+Drop-when: upstream cpu_spoof leaves loops_per_jiffy and elf_hwcap alone
 
 loops_per_jiffy is the arm64 udelay() calibration and elf_hwcap feeds
 AT_HWCAP/AT_HWCAP2. The Manager pre-fills BogoMIPS 38 (the kernel

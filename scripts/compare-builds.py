@@ -1,4 +1,11 @@
-"""Compare phase 1b outputs from gh run download, or unpacked kernel/ and native/ directories."""
+"""Compare phase 1b outputs from gh run download, or unpacked kernel/ and native/ directories.
+
+The kernel build is bit-reproducible, so every kernel payload must match byte for
+byte. libksud.so is not: two builds from identical native inputs emit the same
+symbols and constants in a different order, and so with different padding. It
+therefore passes when its recorded inputs, toolchain and build mode match; its
+differing hashes are reported as not_reproducible.
+"""
 import argparse
 import hashlib
 import json
@@ -12,6 +19,20 @@ SOURCE_FILES = {"common.diff", "SukiSU.diff", "integrated-source-manifest.json"}
 KERNEL_FIELDS = ("kernel_release", "driver_version", "manager_version", "susfs_version",
                  "image_sha256", "public_certificate_sha256")
 NATIVE_FIELDS = ("version_code", "version_name", "uapi_compared_values")
+# How libksud.so was produced, besides the run's own commit and ref.
+NATIVE_INPUT_FIELDS = ("upstream_sha", "rustc", "ndk_revision", "ndk_sha", "android_api",
+                       "elf_architecture", "interpreter", "needed", "uapi_version",
+                       "profile_version", "profile_bytes", "actual_build",
+                       "official_signed_apk", "device_operations", "schema_version")
+NON_REPRODUCIBLE = {"libksud.so"}
+
+
+def native_inputs(info, path):
+    inputs = info["source_inputs"]
+    require(inputs["before"] == inputs["after"], f"Native inputs changed during the build in {path}")
+    recorded = {key: value for key, value in inputs["after"].items() if key != "ci_source"}
+    recorded.update({key: info[key] for key in NATIVE_INPUT_FIELDS})
+    return hashlib.sha256(json.dumps(recorded, sort_keys=True).encode()).hexdigest()
 
 
 def require(condition, message):
@@ -25,6 +46,7 @@ def digest(stream):
 
 def snapshot(root, expected_commit=None):
     snapshot = {}
+    unstable = {}
     components = []
     for folder, fields in (("kernel", KERNEL_FIELDS), ("native", NATIVE_FIELDS)):
         prefix = f"fuxi-{folder}-"
@@ -50,6 +72,7 @@ def snapshot(root, expected_commit=None):
                 snapshot["source/" + name] = sha
         else:
             require(info["uapi_all_equal"] is True, f"Native UAPI comparison failed in {path}")
+            snapshot["native/inputs"] = native_inputs(info, path)
         artifacts = info["artifacts"]
         zips = [name for name in artifacts if name.endswith(".zip")]
         expected = set(zips) if folder == "kernel" else {*zips, "libksud.so"}
@@ -66,7 +89,7 @@ def snapshot(root, expected_commit=None):
                         f"Artifact differs from build metadata: {asset}")
             prefix = f"{folder}/{name}"
             if name not in zips:
-                snapshot[prefix] = record["sha256"]
+                (unstable if folder == "native" and name in NON_REPRODUCIBLE else snapshot)[prefix] = record["sha256"]
                 continue
             with zipfile.ZipFile(asset) as archive:
                 entries = archive.namelist()
@@ -82,7 +105,12 @@ def snapshot(root, expected_commit=None):
                         continue
                     with archive.open(entry) as stream:
                         sha = digest(stream)
-                    snapshot[f"{prefix}/{entry.filename}"] = (sha, entry.external_attr >> 16)
+                    key, mode = f"{prefix}/{entry.filename}", entry.external_attr >> 16
+                    if folder == "native" and entry.filename in NON_REPRODUCIBLE:
+                        unstable[key] = sha
+                        snapshot[key + ":mode"] = mode
+                    else:
+                        snapshot[key] = (sha, mode)
                     if folder == "kernel" and entry.filename == "Image":
                         images.append(sha)
                     if folder == "native" and entry.filename == "libksud.so":
@@ -95,16 +123,20 @@ def snapshot(root, expected_commit=None):
     if expected_commit:
         require(re.fullmatch(r"[0-9a-f]{7,40}", expected_commit) and commit.startswith(expected_commit),
                 f"Unexpected source commit {commit} in {root}")
-    return {"repository": repository, "source_sha": commit, "run_id": run_id}, snapshot
+    return {"repository": repository, "source_sha": commit, "run_id": run_id}, snapshot, unstable
 
 
 def compare(baseline, candidate, baseline_sha=None, candidate_sha=None):
-    old_run, old = snapshot(baseline, baseline_sha)
-    new_run, new = snapshot(candidate, candidate_sha)
+    old_run, old, old_unstable = snapshot(baseline, baseline_sha)
+    new_run, new, new_unstable = snapshot(candidate, candidate_sha)
     require(old_run["repository"] == new_run["repository"], "Runs belong to different repositories")
+    require(old_unstable.keys() == new_unstable.keys(), "Runs contain different non-reproducible payloads")
     differences = {key: {"baseline": old.get(key), "candidate": new.get(key)}
                    for key in sorted(old.keys() | new.keys()) if old.get(key) != new.get(key)}
-    return {"baseline": old_run, "candidate": new_run, "passed": not differences, "differences": differences}
+    not_reproducible = {key: {"baseline": old_unstable[key], "candidate": new_unstable[key]}
+                        for key in sorted(old_unstable) if old_unstable[key] != new_unstable[key]}
+    return {"baseline": old_run, "candidate": new_run, "passed": not differences,
+            "differences": differences, "not_reproducible": not_reproducible}
 
 
 if __name__ == "__main__":

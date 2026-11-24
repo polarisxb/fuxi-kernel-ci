@@ -1,0 +1,56 @@
+Subject: ksud: ask Zygisk Next for its injection state
+Upstream-Status: Pending [SukiSU-Ultra main]
+Drop-when: upstream detects Zygisk Next without relying on its process name
+
+Zygisk Next can hide its daemon's process name, so the process scan
+reported it as not running. Run its zygiskd status command (killed
+after 2 s) and require exactly one inject_state:1 line. NeoZygisk and
+NyaZygisk keep the process-name check.
+---
+diff --git a/userspace/ksud/src/module.rs b/userspace/ksud/src/module.rs
+index c04d49074d4e133b2d62fb3837388e77d9b715ff..7b90dbb1f3adcdea7c1cf12b32082b031d19e2be 100644
+--- a/userspace/ksud/src/module.rs
++++ b/userspace/ksud/src/module.rs
+@@ -1069,12 +1069,40 @@ where
+     false
+ }
+ 
+-/// Determine whether the Zygisk provider's daemon is actually running
++/// Query Zygisk Next directly because its daemon can hide its process name.
++fn is_zygisk_next_running() -> bool {
++    let Ok(output) = Command::new(assets::BUSYBOX_PATH)
++        .args([
++            "timeout",
++            "-s",
++            "KILL",
++            "2",
++            "/data/adb/modules/zygisksu/bin/zygiskd",
++            "status",
++        ])
++        .output()
++    else {
++        return false;
++    };
++    if !output.status.success() {
++        return false;
++    }
++    let Ok(status) = std::str::from_utf8(&output.stdout) else {
++        return false;
++    };
++    let mut states = status
++        .lines()
++        .filter_map(|line| line.strip_prefix("inject_state:"));
++    matches!((states.next(), states.next()), (Some("1"), None))
++}
++
++/// Determine whether the Zygisk provider is actually running
+ pub fn is_zygisk_daemon_running(module_id: &str) -> bool {
+     let id_lower = module_id.to_ascii_lowercase();
+     match id_lower.as_str() {
+         "rezygisk" => is_process_running_matching(|name| name.starts_with("rezygisk")),
+-        "zygisksu" | "nyazygisk" | "neozygisk" => is_process_running_matching(|name| {
++        "zygisksu" => is_zygisk_next_running(),
++        "nyazygisk" | "neozygisk" => is_process_running_matching(|name| {
+             name.starts_with("zygiskd")
+                 || name.starts_with("zygisk-ptrace")
+                 || name.starts_with("zygisk-comp")

@@ -1,0 +1,164 @@
+Subject: susfs: keep the caller's nameidata for open redirects
+Upstream-Status: Pending [simonpunk/susfs4ksu gki-android13-5.15]
+Drop-when: upstream path_openat(), do_tmpfile() and do_o_path() stop reusing the caller's nameidata
+
+The redirect code popped the caller's nameidata, pushed it again with
+the fake filename and freed that filename on return. When
+do_filp_open() retries after -ECHILD or -ESTALE, it walks the freed
+name. Use a separate on-stack nameidata for the redirected lookup,
+return errors from susfs_open_redirect_spoof_do_sys_openat(), and
+leave RCU walk with -ECHILD before the redirect allocates with
+GFP_KERNEL.
+---
+diff --git a/fs/namei.c b/fs/namei.c
+index f3def161dae5bde0af077dd091e3d84bbbf7cc4d..a8d6b0c234a70ab8558140fee300f67eb3f6dde2 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3809,7 +3809,7 @@ static int do_tmpfile(struct nameidata *nd, unsigned flags,
+ 		struct file *file)
+ {
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+-	int old_dfd = nd->dfd;
++	struct nameidata redirect_nd;
+ 	bool is_nd_state_root_preset = (nd->state & ND_ROOT_PRESET);
+ 	struct filename *fake_filename = NULL;
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+@@ -3822,15 +3822,17 @@ static int do_tmpfile(struct nameidata *nd, unsigned flags,
+ 		SUSFS_IS_INODE_OPEN_REDIRECT_WITHOUT_UID_CHECK(path.dentry->d_inode))
+ 	{
+ 		fake_filename = susfs_open_redirect_spoof_do_sys_openat(path.dentry->d_inode);
+-		if (fake_filename && !IS_ERR(fake_filename)) {
++		if (IS_ERR(fake_filename)) {
++			error = PTR_ERR(fake_filename);
++			goto out;
++		}
++		if (fake_filename) {
+ 			path_put(&path);
+-			restore_nameidata();
+-			set_nameidata(nd, old_dfd, fake_filename, NULL);
++			set_nameidata(&redirect_nd, nd->dfd, fake_filename, NULL);
++			nd = &redirect_nd;
+ 			error = path_lookupat(nd, flags | LOOKUP_DIRECTORY, &path);
+-			if (unlikely(error)) {
+-				putname(fake_filename);
+-				return error;
+-			}
++			if (unlikely(error))
++				goto out_restore;
+ 		}
+ 	}
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+@@ -3856,8 +3858,11 @@ out2:
+ out:
+ 	path_put(&path);
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+-	if (fake_filename && !IS_ERR(fake_filename))
++out_restore:
++	if (fake_filename && !IS_ERR(fake_filename)) {
++		restore_nameidata();
+ 		putname(fake_filename);
++	}
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+ 	return error;
+ }
+@@ -3865,7 +3870,7 @@ out:
+ static int do_o_path(struct nameidata *nd, unsigned flags, struct file *file)
+ {
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+-	int old_dfd = nd->dfd;
++	struct nameidata redirect_nd;
+ 	bool is_nd_state_root_preset = (nd->state & ND_ROOT_PRESET);
+ 	struct filename *fake_filename = NULL;
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+@@ -3877,15 +3882,18 @@ static int do_o_path(struct nameidata *nd, unsigned flags, struct file *file)
+ 			SUSFS_IS_INODE_OPEN_REDIRECT_WITHOUT_UID_CHECK(path.dentry->d_inode))
+ 		{
+ 			fake_filename = susfs_open_redirect_spoof_do_sys_openat(path.dentry->d_inode);
+-			if (fake_filename && !IS_ERR(fake_filename)) {
++			if (IS_ERR(fake_filename)) {
++				error = PTR_ERR(fake_filename);
++				path_put(&path);
++				goto out_restore;
++			}
++			if (fake_filename) {
+ 				path_put(&path);
+-				restore_nameidata();
+-				set_nameidata(nd, old_dfd, fake_filename, NULL);
++				set_nameidata(&redirect_nd, nd->dfd, fake_filename, NULL);
++				nd = &redirect_nd;
+ 				error = path_lookupat(nd, flags, &path);
+-				if (unlikely(error)) {
+-					putname(fake_filename);
+-					return error;
+-				}
++				if (unlikely(error))
++					goto out_restore;
+ 			}
+ 		}
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+@@ -3894,8 +3902,11 @@ static int do_o_path(struct nameidata *nd, unsigned flags, struct file *file)
+ 		path_put(&path);
+ 	}
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+-	if (fake_filename && !IS_ERR(fake_filename))
++out_restore:
++	if (fake_filename && !IS_ERR(fake_filename)) {
++		restore_nameidata();
+ 		putname(fake_filename);
++	}
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+ 	return error;
+ }
+@@ -3904,7 +3915,7 @@ static struct file *path_openat(struct nameidata *nd,
+ 			const struct open_flags *op, unsigned flags)
+ {
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+-	int old_dfd = nd->dfd;
++	struct nameidata redirect_nd;
+ 	bool is_nd_state_root_preset = (nd->state & ND_ROOT_PRESET);
+ 	struct filename *fake_filename = NULL;
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+@@ -3928,12 +3939,22 @@ static struct file *path_openat(struct nameidata *nd,
+ 		if (!error && !is_nd_state_root_preset &&
+ 			SUSFS_IS_INODE_OPEN_REDIRECT_WITHOUT_UID_CHECK(nd->path.dentry->d_inode))
+ 		{
++			/* The redirect lookup allocates a filename with GFP_KERNEL. */
++			if (nd->flags & LOOKUP_RCU) {
++				error = -ECHILD;
++				goto out_walk;
++			}
+ 			fake_filename = susfs_open_redirect_spoof_do_sys_openat(nd->path.dentry->d_inode);
+-			if (fake_filename && !IS_ERR(fake_filename)) {
++			if (IS_ERR(fake_filename)) {
++				error = PTR_ERR(fake_filename);
++				goto out_walk;
++			}
++			if (fake_filename) {
+ 				const char *new_s = NULL;
+ 				terminate_walk(nd);
+-				restore_nameidata();
+-				set_nameidata(nd, old_dfd, fake_filename, NULL);
++				/* Keep the original nameidata alive for do_filp_open retries. */
++				set_nameidata(&redirect_nd, nd->dfd, fake_filename, NULL);
++				nd = &redirect_nd;
+ 				new_s = path_init(nd, flags);
+ 				while (!(error = link_path_walk(new_s, nd)) &&
+ 				       (new_s = open_last_lookups(nd, file, op)) != NULL)
+@@ -3943,11 +3964,16 @@ static struct file *path_openat(struct nameidata *nd,
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+ 		if (!error)
+ 			error = do_open(nd, file, op);
++#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
++out_walk:
++#endif
+ 		terminate_walk(nd);
+ 	}
+ #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+-	if (fake_filename && !IS_ERR(fake_filename))
++	if (fake_filename && !IS_ERR(fake_filename)) {
++		restore_nameidata();
+ 		putname(fake_filename);
++	}
+ #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+ 	if (likely(!error)) {
+ 		if (likely(file->f_mode & FMODE_OPENED))

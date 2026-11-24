@@ -187,7 +187,7 @@ for (const [name, build] of [
   test(`uname ${name} roundtrips as data through native arguments, shell config and WebUI parser`, async () => {
     const fixture = await settingsFixture();
     try {
-      const release = '5.15.194-local2';
+      const release = '6.1.99-fixture';
       fixture.node('sus_uname_checkbox').checked = true;
       fixture.node('sus_uname_build_checkbox').checked = true;
       fixture.node('sus_uname').value = release;
@@ -250,7 +250,7 @@ test('boot-time uname application preserves whitespace, quotes and metacharacter
     const start = utils.indexOf('spoof_uname() {');
     assert.ok(start >= 0);
     const fragment = utils.slice(start, utils.indexOf('\n}', start) + 2);
-    const release = "5.15.194-'quoted'";
+    const release = "6.1.99-'quoted'";
     const build = "#1 & / ' \" * $(touch injected-boot) `touch injected-boot2`";
     const result = spawnSync('sh', ['-c', fragment + '\nspoof_uname\n'], {
       cwd: fixture.directory,
@@ -271,7 +271,7 @@ for (const option of ['failTool', 'failPersistence']) {
     try {
       fixture.node('sus_uname_checkbox').checked = true;
       fixture.node('sus_uname_build_checkbox').checked = true;
-      fixture.node('sus_uname').value = '5.15.194-local2';
+      fixture.node('sus_uname').value = '6.1.99-fixture';
       fixture.node('sus_uname_build').value = 'new-build';
       await fixture.node('set_uname').trigger('click');
       assert.deepEqual(persistedValues(fixture), ['default', 'default', '17']);

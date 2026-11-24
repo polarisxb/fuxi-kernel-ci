@@ -15,7 +15,7 @@ agent 查询 latest 后应使用返回的 `browser_download_url`，它对应不�
 
 | 文件 | 用途 |
 | --- | --- |
-| `Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip` | fuxi 内核 AnyKernel3 包 |
+| `Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r3_AnyKernel3.zip` | fuxi 内核 AnyKernel3 包 |
 | `SUSFS_R28_Fuxi230_40900_local2.zip` | 独立 SUSFS 模块包 |
 | `Fuxi_SukiSU_40900_Zygisk_StatusFix.zip` | SukiSU 40900 的 ARM64 检测修复材料 |
 | `libksud.so` | 对应的 ARM64 本地程序，不是官方签名 APK |

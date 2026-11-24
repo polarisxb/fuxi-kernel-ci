@@ -24,9 +24,9 @@ class DeliveryTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix='fuxi-delivery-test-')
         self.root = Path(self.temporary.name)
         self.identity = {'common_sha': V.COMMON_SHA, 'builtin_sha': V.BUILTIN_SHA,
-                         'susfs_sha': V.SUSFS_SHA, 'manager_version': 40900,
-                         'driver_version': 40900, 'uapi_version': 2,
-                         'profile_version': 4, 'susfs_version': 'v2.3.0'}
+                         'susfs_sha': V.SUSFS_SHA, 'manager_version': V.IDENTITY['manager_version_code'],
+                         'driver_version': V.IDENTITY['driver_version'], 'uapi_version': 2,
+                         'profile_version': 4, 'susfs_version': V.IDENTITY['susfs_version']}
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -37,10 +37,9 @@ class DeliveryTests(unittest.TestCase):
         for relative in V.REQUIRED:
             path = package / relative
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text('fixture for ' + relative + '\n')
-        self.apk_patch = patch.object(V, 'APK_SHA', V.sha256(package / V.APK_NAME))
-        self.apk_patch.start()
-        self.addCleanup(self.apk_patch.stop)
+            path.write_bytes(('fixture for ' + relative + '\n').encode())
+        build_identity = dict(V.IDENTITY, apk_sha256=V.sha256(package / V.APK_NAME))
+        (package / 'configs/build-identity.json').write_bytes(json.dumps(build_identity).encode())
         V.write_inventory(package, self.identity)
         return package
 
@@ -53,7 +52,7 @@ class DeliveryTests(unittest.TestCase):
         package = self.fixture()
         for name in [V.APK_NAME, 'matching-gki-modules/zram.ko',
                      'public-certificates/signing_key.x509',
-                     'source/builtin-e2912817.tar.gz', 'tools/ksu_susfs']:
+                     'source/' + V.IDENTITY['builtin_archive'], 'tools/ksu_susfs']:
             path = package / name
             data = path.read_bytes()
             path.unlink()
@@ -68,6 +67,21 @@ class DeliveryTests(unittest.TestCase):
         package = self.fixture()
         (package / 'SHA256SUMS').unlink()
         with self.assertRaisesRegex(ValueError, 'inventory/checksums'):
+            V.verify_inventory(package)
+
+    def test_missing_build_identity_is_rejected(self):
+        package = self.fixture()
+        (package / 'configs/build-identity.json').unlink()
+        with self.assertRaises(FileNotFoundError):
+            V.verify_inventory(package)
+
+    def test_build_identity_tampering_is_rejected(self):
+        package = self.fixture()
+        path = package / 'configs/build-identity.json'
+        identity = json.loads(path.read_bytes())
+        identity['kernel_release'] += '-changed'
+        path.write_bytes(json.dumps(identity).encode())
+        with self.assertRaisesRegex(ValueError, 'hash/size'):
             V.verify_inventory(package)
 
     def test_extra_or_stale_file_rejected(self):

@@ -12,8 +12,14 @@ import stat
 import zipfile
 
 
-KERNEL_ZIP = "Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip"
-MODULE_ZIP = "SUSFS_R28_Fuxi230_40900_local2.zip"
+spec = importlib.util.spec_from_file_location("artifact_identity", Path(__file__).with_name("identity.py"))
+identity_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(identity_module)
+IDENTITY = identity_module.from_repository()
+
+
+KERNEL_ZIP = IDENTITY["kernel_zip"]
+MODULE_ZIP = IDENTITY["module_zip"]
 
 
 def sha256(path):
@@ -74,6 +80,13 @@ def verify_ci_source(workspace, release_root, source_sha):
                 "executable": bool(path.stat().st_mode & stat.S_IXUSR)}
     require(provenance["inputs"]["configs"].get("ci-source.json") == expected,
             "CI source identity is not bound to the successful compilation")
+    identity_path = release_root / "configs/build-identity.json"
+    require(json.loads(identity_path.read_bytes()) == dict(IDENTITY, actual_kernel_version=IDENTITY["kernel_version"]),
+            "Delivered build identity differs from the repository lock")
+    require(provenance["inputs"]["configs"].get("build-identity.json") == {
+        "type": "file", "sha256": sha256(identity_path),
+        "executable": bool(identity_path.stat().st_mode & stat.S_IXUSR)},
+        "Build identity is not bound to the successful compilation")
     source_files = source.get("source_files", {})
     prefix = "module/"
     expected_module = {name[len(prefix):]: digest for name, digest in source_files.items()
@@ -114,6 +127,10 @@ def export(workspace, dist, reports):
     require(len(source_sha) == 40 and all(char in "0123456789abcdef" for char in source_sha),
             "A complete CI source SHA is required")
     verify_ci_source(workspace, release_root, source_sha)
+    source_identity = {
+        name: sha256(release_root / "source-diffs" / name)
+        for name in ("common.diff", "SukiSU.diff", "integrated-source-manifest.json")
+    }
     dist.mkdir(parents=True)
     try:
         shutil.copy2(kernel, dist / KERNEL_ZIP)
@@ -125,15 +142,16 @@ def export(workspace, dist, reports):
             "component": "kernel",
             "created_at": datetime.now(timezone.utc).isoformat(),
             "source_sha": source_sha,
+            "source_identity": source_identity,
             "source_ref": os.environ.get("CI_SOURCE_REF", os.environ.get("GITHUB_REF", "local")),
             "repository": os.environ.get("GITHUB_REPOSITORY", "polarisxb/fuxi-kernel-ci"),
             "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
             "kernel_release": (release_root / "kernel.release").read_text().strip(),
             "image_sha256": sha256(release_root / "Image"),
             "public_certificate_sha256": sha256(release_root / "public-certificates/signing_key.x509"),
-            "driver_version": 40900,
-            "manager_version": 40900,
-            "susfs_version": "v2.3.0",
+            "driver_version": IDENTITY["driver_version"],
+            "manager_version": IDENTITY["manager_version_code"],
+            "susfs_version": IDENTITY["susfs_version"],
             "protections": {"full_lto": True, "lto_partitions": 1, "lto_threads": 2,
                             "cfi": True, "btf": True, "modversions": True,
                             "module_sig_protect": True, "strict_kmi": True},

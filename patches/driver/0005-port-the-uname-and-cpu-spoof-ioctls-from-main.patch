@@ -1,0 +1,401 @@
+Subject: Port the uname and CPU spoof ioctls from main 904c60d1
+Upstream-Status: Inappropriate [main has since renumbered SET_SPOOF_VERSION and moved CPU spoof behind KSU_IOCTL_EXTENSION]
+Drop-when: phase 2, once the UAPI check accepts Manager-only ioctls
+
+workspace/scripts/verify-uapi.py requires the driver to expose every
+Manager 40900 ioctl. Add SET_SPOOF_VERSION and SET_SPOOF_CPU, resolving
+kernel data with kallsyms instead of main's syscall-hook resolver. On
+this branch elf_hwcap is one word holding HWCAP and HWCAP2, so write it
+packed instead of as main's two-element bitmap, and fail before any
+change when a symbol is missing.
+---
+diff --git a/kernel/feature/cpu_spoof.c b/kernel/feature/cpu_spoof.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..c4c95f9de76895d01de44a518ead78adf397e1d7
+--- /dev/null
++++ b/kernel/feature/cpu_spoof.c
+@@ -0,0 +1,146 @@
++/* Ported from SukiSU Ultra 904c60d18f026340ce38ca2d5a1da529aadcba1a. */
++// SPDX-License-Identifier: GPL-2.0
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/cpumask.h>
++#include <linux/percpu.h>
++#include <linux/jiffies.h>
++#include <linux/delay.h>
++#include <linux/clocksource.h>
++#include <linux/errno.h>
++#include <linux/version.h>
++
++#include "cpu_spoof.h"
++#include "infra/release_symbol_lookup.h"
++#include "klog.h"
++
++#if defined(CONFIG_ARM64) || defined(__aarch64__)
++#include <asm/cpu.h>
++#include <asm/cputype.h>
++#include <asm/cpufeature.h>
++#include <vdso/datapage.h>
++#include <vdso/clocksource.h>
++
++#ifndef MIDR_PARTNUM_SHIFT
++#define MIDR_PARTNUM_SHIFT 4
++#endif
++
++#ifndef MIDR_PARTNUM_MASK
++#define MIDR_PARTNUM_MASK (0xfff << MIDR_PARTNUM_SHIFT)
++#endif
++
++#ifndef MIDR_PARTNUM
++#define MIDR_PARTNUM(midr) (((midr) & MIDR_PARTNUM_MASK) >> MIDR_PARTNUM_SHIFT)
++#endif
++
++#ifndef ARM_CPU_PART_NEOVERSE_N1
++#define ARM_CPU_PART_NEOVERSE_N1 0xd0c
++#endif
++
++#ifndef ARM_CPU_PART_CORTEX_A76
++#define ARM_CPU_PART_CORTEX_A76 0xd0b
++#endif
++
++#ifndef QCOM_CPU_PART_KRYO_4XX_GOLD
++#define QCOM_CPU_PART_KRYO_4XX_GOLD 0x804
++#endif
++
++#ifndef CS_HRES_COARSE
++#define CS_HRES_COARSE 0
++#endif
++
++#ifndef CS_RAW
++#define CS_RAW 1
++#endif
++
++#ifndef VDSO_CLOCKMODE_ARCHTIMER
++#define VDSO_CLOCKMODE_ARCHTIMER 1
++#endif
++
++#ifndef ARM64_WORKAROUND_1418040
++#define ARM64_WORKAROUND_1418040 37
++#endif
++
++#endif
++
++int ksu_set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
++{
++    if (!cmd)
++        return -EINVAL;
++
++    /* Boundary Enforcement to prevent out-of-bounds per-CPU page dereferencing */
++    if (cmd->cpu_index >= nr_cpu_ids || !cpu_possible(cmd->cpu_index)) {
++        pr_warn("ksu: set_spoof_cpu out-of-bounds cpu_index %u\n", cmd->cpu_index);
++        return -EINVAL;
++    }
++
++#if defined(CONFIG_ARM64) || defined(__aarch64__)
++    /* This pinned android13-5.15 branch stores HWCAP/HWCAP2 as the low/high
++     * 32 bits of one elf_hwcap word (cpu_get_elf_hwcap{,2}()). Reject values
++     * that cannot be represented before applying any change.
++     */
++    if ((cmd->hwcap >> 32) || (cmd->hwcap2 >> 32))
++        return -ERANGE;
++
++    /* Fail before any mutation if the required target data is unavailable.
++     * The upstream handler merely logged failed lookups and returned success.
++     */
++    if (!ksu_release_lookup_data_symbol("cpu_data"))
++        return -ENOENT;
++    if (cmd->cpu_index == 0 &&
++        (!ksu_release_lookup_data_symbol("loops_per_jiffy") ||
++         !ksu_release_lookup_data_symbol("elf_hwcap")))
++        return -ENOENT;
++
++    /* 1. Resolve 'cpu_data' and overwrite target core MIDR (executed for each CPU) */
++    {
++        unsigned long cpu_data_base = ksu_release_lookup_data_symbol("cpu_data");
++        if (cpu_data_base) {
++            struct cpuinfo_arm64 *info = per_cpu_ptr((struct cpuinfo_arm64 *)cpu_data_base, cmd->cpu_index);
++            if (info) {
++                info->reg_midr = cmd->midr;
++            }
++        } else {
++            pr_warn("ksu: set_spoof_cpu failed to resolve 'cpu_data'\n");
++        }
++    }
++
++    /* 2. Global modifications (executed exactly once on CPU 0) */
++    if (cmd->cpu_index == 0) {
++        /* A. Override global dynamic timing metric */
++        unsigned long *lpj = (unsigned long *)ksu_release_lookup_data_symbol("loops_per_jiffy");
++        if (lpj) {
++            pr_info("ksu: set_spoof_cpu current global loops_per_jiffy: %lu\n", *lpj);
++            *lpj = ((unsigned long)cmd->bogomips * 500000) / (100 * HZ);
++            pr_info("ksu: set_spoof_cpu updated global loops_per_jiffy: %lu\n", *lpj);
++        } else {
++            pr_warn("ksu: set_spoof_cpu failed to resolve 'loops_per_jiffy'\n");
++        }
++
++        /* B. Globally overwrite hardware capabilities */
++        unsigned long *elf_hwcap_word = (unsigned long *)ksu_release_lookup_data_symbol("elf_hwcap");
++        if (elf_hwcap_word) {
++            /* Do not use upstream's [0]/[1] layout: on this branch the
++             * second write would corrupt a neighboring kernel variable.
++             */
++            unsigned long packed = (unsigned long)cmd->hwcap |
++                                   ((unsigned long)cmd->hwcap2 << 32);
++            WRITE_ONCE(*elf_hwcap_word, packed);
++            pr_info("ksu: set_spoof_cpu packed elf_hwcap: 0x%lx\n", packed);
++        } else {
++            pr_warn("ksu: set_spoof_cpu failed to resolve 'elf_hwcap'\n");
++        }
++
++        /* A reported CPU identity does not change the physical CPU.
++         * Preserve the real clocksource/vDSO synchronization and errata
++         * capabilities instead of overriding them from a spoofed MIDR.
++         */
++
++    }
++#else
++    return -EOPNOTSUPP;
++#endif
++
++    pr_info("KernelSU Stealth: CPU %u identity spoofed (MIDR: 0x%08x)\n", cmd->cpu_index, cmd->midr);
++    return 0;
++}
+diff --git a/kernel/feature/cpu_spoof.h b/kernel/feature/cpu_spoof.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..3102f4b76410dfb78bb7bc34a4ffd7b06166557d
+--- /dev/null
++++ b/kernel/feature/cpu_spoof.h
+@@ -0,0 +1,10 @@
++/* Ported from SukiSU Ultra 904c60d18f026340ce38ca2d5a1da529aadcba1a. */
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef __KSU_H_CPU_SPOOF
++#define __KSU_H_CPU_SPOOF
++
++#include "uapi/supercall.h"
++
++int ksu_set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd);
++
++#endif /* __KSU_H_CPU_SPOOF */
+diff --git a/kernel/feature/uts_spoof.c b/kernel/feature/uts_spoof.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..85d989bee0dc426bde01f8b3a0b6445d1fd7a539
+--- /dev/null
++++ b/kernel/feature/uts_spoof.c
+@@ -0,0 +1,63 @@
++/* Ported from SukiSU Ultra 904c60d18f026340ce38ca2d5a1da529aadcba1a. */
++
++#include <linux/string.h>
++
++#include "uts_spoof.h"
++#include "infra/release_symbol_lookup.h"
++#include "klog.h"
++
++static void do_spoof_version(struct rw_semaphore *sem, struct uts_namespace *ns,
++                             const char *release, const char *version)
++{
++    if (sem) {
++        down_write(sem);
++    } else {
++        down_write(&uts_sem);
++    }
++
++    if (ns) {
++        if (release && release[0] != '\0') {
++            strscpy(ns->name.release, release, sizeof(ns->name.release));
++        }
++        if (version && version[0] != '\0') {
++            strscpy(ns->name.version, version, sizeof(ns->name.version));
++        }
++    } else {
++        if (release && release[0] != '\0') {
++            strscpy(init_uts_ns.name.release, release, sizeof(init_uts_ns.name.release));
++        }
++        if (version && version[0] != '\0') {
++            strscpy(init_uts_ns.name.version, version, sizeof(init_uts_ns.name.version));
++        }
++    }
++
++    if (sem) {
++        up_write(sem);
++    } else {
++        up_write(&uts_sem);
++    }
++
++    if (ns) {
++        pr_info("ksu: spoofed version: %s, release: %s\n", ns->name.version, ns->name.release);
++    } else {
++        pr_info("ksu: spoofed version: %s, release: %s\n", init_uts_ns.name.version, init_uts_ns.name.release);
++    }
++}
++
++void ksu_spoof_version(const char *spoof_release, const char *spoof_version)
++{
++    struct rw_semaphore *sem = (struct rw_semaphore *)ksu_release_lookup_data_symbol("uts_sem");
++    struct uts_namespace *ns = (struct uts_namespace *)ksu_release_lookup_data_symbol("init_uts_ns");
++
++    do_spoof_version(sem, ns, spoof_release, spoof_version);
++}
++
++int ksu_set_spoof_version(const char *release, const char *version)
++{
++    struct rw_semaphore *sem = (struct rw_semaphore *)ksu_release_lookup_data_symbol("uts_sem");
++    struct uts_namespace *ns = (struct uts_namespace *)ksu_release_lookup_data_symbol("init_uts_ns");
++
++    do_spoof_version(sem, ns, release, version);
++
++    return 0;
++}
+diff --git a/kernel/feature/uts_spoof.h b/kernel/feature/uts_spoof.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..139cbc3f7faed846867922d644b03170b940fbc2
+--- /dev/null
++++ b/kernel/feature/uts_spoof.h
+@@ -0,0 +1,12 @@
++/* Ported from SukiSU Ultra 904c60d18f026340ce38ca2d5a1da529aadcba1a. */
++#ifndef __KSU_H_UTS_SPOOF
++#define __KSU_H_UTS_SPOOF
++
++#include <linux/rwsem.h>
++#include <linux/utsname.h>
++
++void ksu_spoof_version(const char *spoof_release, const char *spoof_version);
++
++int ksu_set_spoof_version(const char *release, const char *version);
++
++#endif
+diff --git a/kernel/include/uapi/supercall.h b/kernel/include/uapi/supercall.h
+index bfdc1d144d1e0f91a72dedc00520ba8991474a72..56844764f058a7021f34a917cf1ca1a78ae704de 100644
+--- a/kernel/include/uapi/supercall.h
++++ b/kernel/include/uapi/supercall.h
+@@ -151,6 +151,20 @@ struct ksu_get_sulog_fd_cmd {
+     __u32 flags; /* Input: reserved for future use, must be 0 */
+ };
+ 
++/* Ported from SukiSU Ultra 904c60d18f026340ce38ca2d5a1da529aadcba1a. */
++struct ksu_set_spoof_version_cmd {
++    __u8 release[65]; /* Input: e.g., "5.10.115-android12-9-g00000000" */
++    __u8 version[65]; /* Input: e.g., "#1 SMP PREEMPT Thu Jan 1 00:00:00 UTC 2026" */
++};
++
++struct ksu_set_spoof_cpu_cmd {
++    __u32 cpu_index;  /* Target processor core index */
++    __u32 midr;       /* Main ID Register payload */
++    __u32 bogomips;   /* BogoMIPS performance timing metric */
++    __u64 hwcap;      /* Main ELF Hardware Capabilities mask */
++    __u64 hwcap2;     /* Auxiliary ELF Hardware Capabilities mask */
++};
++
+ // List current umount entries
+ struct ksu_list_try_umount_cmd {
+     __aligned_u64 arg; // User buffer
+@@ -222,6 +236,8 @@ DECLARE(__u32, KSU_IOCTL_GET_FULL_VERSION, _IOC(_IOC_READ, 'K', 100, 0));
+ DECLARE(__u32, KSU_IOCTL_HOOK_TYPE, _IOC(_IOC_READ, 'K', 101, 0));
+ DECLARE(__u32, KSU_IOCTL_ENABLE_KPM, _IOC(_IOC_READ, 'K', 102, 0));
+ DECLARE(__u32, KSU_IOCTL_LIST_TRY_UMOUNT, _IOC(_IOC_READ | _IOC_WRITE, 'K', 103, 0));
++DECLARE(__u32, KSU_IOCTL_SET_SPOOF_VERSION, _IOC(_IOC_WRITE, 'K', 104, 0));
++DECLARE(__u32, KSU_IOCTL_SET_SPOOF_CPU, _IOC(_IOC_WRITE, 'K', 105, 0));
+ DECLARE(__u32, KSU_IOCTL_KPM, _IOC(_IOC_READ | _IOC_WRITE, 'K', 200, 0));
+ 
+ #endif
+diff --git a/kernel/infra/release_symbol_lookup.h b/kernel/infra/release_symbol_lookup.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..833f81d9d01a40bfc2d8cc38544a23d1c6e924a2
+--- /dev/null
++++ b/kernel/infra/release_symbol_lookup.h
+@@ -0,0 +1,16 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef __KSU_RELEASE_SYMBOL_LOOKUP_H
++#define __KSU_RELEASE_SYMBOL_LOOKUP_H
++
++#include <linux/kallsyms.h>
++
++/* The official release spoof handlers resolve data symbols only. This
++ * built-in kernel can use kallsyms directly; no dynamic syscall/LSM hooks or
++ * function-pointer resolver are imported from the LKM-capable branch.
++ */
++static inline unsigned long ksu_release_lookup_data_symbol(const char *name)
++{
++    return kallsyms_lookup_name(name);
++}
++
++#endif
+diff --git a/kernel/ksu.c b/kernel/ksu.c
+index ba495d53067cef0d3c5e45389d3f39f6e3274b62..a350e8df130263cefc289d42b188155ad0196cac 100644
+--- a/kernel/ksu.c
++++ b/kernel/ksu.c
+@@ -30,6 +30,8 @@
+ #include "feature/kernel_umount.h"
+ #include "feature/sucompat.h"
+ #include "feature/sulog.h"
++#include "feature/uts_spoof.h"
++#include "feature/cpu_spoof.h"
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+ #include "feature/selinux_hide.h"
+ #endif
+@@ -81,6 +83,8 @@
+ #include "feature/kernel_umount.c"
+ #include "feature/sucompat.c"
+ #include "feature/sulog.c"
++#include "feature/uts_spoof.c"
++#include "feature/cpu_spoof.c"
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+ #include "feature/selinux_hide.c"
+ #endif
+diff --git a/kernel/supercall/dispatch.c b/kernel/supercall/dispatch.c
+index c1d3abaf85786766b90d9e9d557dc55979674d36..acbc24d2b13adff5466255ba872a11bfb2366142 100644
+--- a/kernel/supercall/dispatch.c
++++ b/kernel/supercall/dispatch.c
+@@ -663,6 +663,33 @@ static int do_disable_escape_to_root(void __user *arg)
+     return 0;
+ }
+ 
++/* Ported from SukiSU Ultra 904c60d18f026340ce38ca2d5a1da529aadcba1a. */
++static int do_set_spoof_version(void __user *arg)
++{
++    struct ksu_set_spoof_version_cmd cmd;
++
++    if (copy_from_user(&cmd, arg, sizeof(cmd))) {
++        return -EFAULT;
++    }
++
++    cmd.release[sizeof(cmd.release) - 1] = '\0';
++    cmd.version[sizeof(cmd.version) - 1] = '\0';
++
++    return ksu_set_spoof_version(cmd.release[0] != '\0' ? cmd.release : NULL,
++                                 cmd.version[0] != '\0' ? cmd.version : NULL);
++}
++
++static int do_set_spoof_cpu(void __user *arg)
++{
++    struct ksu_set_spoof_cpu_cmd cmd;
++
++    if (copy_from_user(&cmd, arg, sizeof(cmd))) {
++        return -EFAULT;
++    }
++
++    return ksu_set_spoof_cpu(&cmd);
++}
++
+ static int list_try_umount(void __user *arg)
+ {
+     struct ksu_list_try_umount_cmd cmd;
+@@ -958,6 +985,18 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
+         .handler = do_disable_escape_to_root, 
+         .perm_check = only_root 
+     },
++    {
++        .cmd = KSU_IOCTL_SET_SPOOF_VERSION,
++        .name = "SET_SPOOF_VERSION",
++        .handler = do_set_spoof_version,
++        .perm_check = only_root
++    },
++    {
++        .cmd = KSU_IOCTL_SET_SPOOF_CPU,
++        .name = "SET_SPOOF_CPU",
++        .handler = do_set_spoof_cpu,
++        .perm_check = only_root
++    },
+     {
+         .cmd = KSU_IOCTL_GET_FULL_VERSION,
+         .name = "GET_FULL_VERSION",

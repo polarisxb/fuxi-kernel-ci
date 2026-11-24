@@ -1,0 +1,125 @@
+Subject: susfs: use the driver's declarations for its hook calls
+Upstream-Status: Pending [simonpunk/susfs4ksu gki-android13-5.15]
+Drop-when: the SUSFS patch declares these hooks with SukiSU's types
+
+The SUSFS patch declares ksu_su_compat_enabled as a struct
+static_key_true and ksu_handle_sys_read() as taking only fd, but
+SukiSU builtin defines a bool and a three-argument function. With
+static_branch_likely() on that bool, jump_label_init() stores a
+pointer at offset 8 of a one-byte object. Declare the hooks once in
+include/linux/sukisu_hooks.h, which the driver includes too, and read
+the flag with READ_ONCE().
+---
+diff --git a/fs/exec.c b/fs/exec.c
+index 5e3f5f2063fc82061f0a318517206bc82a36afe0..728913b037fc58df3ec21fb2afb1c7ac9c9b6ef8 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1895,7 +1895,7 @@ out_unmark:
+ }
+ 
+ #ifdef CONFIG_KSU_SUSFS
+-extern struct static_key_true ksu_su_compat_enabled;
++#include <linux/sukisu_hooks.h>
+ extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;
+ extern bool __ksu_is_allow_uid_for_current(uid_t uid);
+ extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+@@ -1919,7 +1919,7 @@ static int do_execveat_common(int fd, struct filename *filename,
+ 	if (likely(susfs_is_current_proc_no_su()))
+ 		goto orig_flow;
+ 
+-	if (static_branch_likely(&ksu_su_compat_enabled)) {
++	if (likely(READ_ONCE(ksu_su_compat_enabled))) {
+ 		if (static_branch_unlikely(&susfs_is_sdcard_android_data_not_decrypted))
+ 			ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+ 		else
+diff --git a/fs/open.c b/fs/open.c
+index c3843d6f2d938eb0c896a4b2aadcfe09c4820ff2..fa52b65b3030732da607606a54fdcae54fcef05b 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -398,9 +398,8 @@ static const struct cred *access_override_creds(void)
+ }
+ 
+ #ifdef CONFIG_KSU_SUSFS
+-extern struct static_key_true ksu_su_compat_enabled;
++#include <linux/sukisu_hooks.h>
+ extern bool __ksu_is_allow_uid_for_current(uid_t uid);
+-extern int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *__unused_flags);
+ #endif
+ 
+ static long do_faccessat(int dfd, const char __user *filename, int mode, int flags)
+@@ -438,7 +437,7 @@ retry:
+ 	if (likely(susfs_is_current_proc_no_su()))
+ 		goto orig_flow;
+ 
+-	if (static_branch_likely(&ksu_su_compat_enabled)) {
++	if (likely(READ_ONCE(ksu_su_compat_enabled))) {
+ 		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val)))
+ 			ksu_handle_faccessat(&dfd, &fname, &mode, NULL);
+ 	}
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 10608b7d8712ecd36e04c58367eab231b5ec68df..5a68626772a5a13bfe27c3fcd340540e1da86dc7 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -630,14 +630,14 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
+ 
+ #ifdef CONFIG_KSU_SUSFS
+ extern struct static_key_true ksu_is_init_rc_hook_enabled;
+-extern __attribute__((cold)) void ksu_handle_sys_read(unsigned int fd);
++#include <linux/sukisu_hooks.h>
+ #endif
+ 
+ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ {
+ #ifdef CONFIG_KSU_SUSFS
+ 	if (static_branch_unlikely(&ksu_is_init_rc_hook_enabled))
+-		ksu_handle_sys_read(fd);
++		ksu_handle_sys_read(fd, NULL, NULL);
+ #endif
+ 
+ 	return ksys_read(fd, buf, count);
+diff --git a/fs/stat.c b/fs/stat.c
+index a5001990fcbfe4b6b1a89a5d07a612c5d7e49074..0829abec8e8d6e43be8e38dd5eb510f7b6efe062 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -220,9 +220,8 @@ int vfs_fstat(int fd, struct kstat *stat)
+ }
+ 
+ #ifdef CONFIG_KSU_SUSFS
+-extern struct static_key_true ksu_su_compat_enabled;
++#include <linux/sukisu_hooks.h>
+ extern bool __ksu_is_allow_uid_for_current(uid_t uid);
+-extern int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
+ #endif
+ 
+ /**
+@@ -268,7 +267,7 @@ retry:
+ 	if (likely(susfs_is_current_proc_no_su()))
+ 		goto orig_flow;
+ 
+-	if (static_branch_likely(&ksu_su_compat_enabled)) {
++	if (likely(READ_ONCE(ksu_su_compat_enabled))) {
+ 		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val)))
+ 			ksu_handle_stat(&dfd, &fname, &flags);
+ 	}
+diff --git a/include/linux/sukisu_hooks.h b/include/linux/sukisu_hooks.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..aebfd6290d3fa2814f99fb9dfb41d34860476889
+--- /dev/null
++++ b/include/linux/sukisu_hooks.h
+@@ -0,0 +1,16 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _LINUX_SUKISU_HOOKS_H
++#define _LINUX_SUKISU_HOOKS_H
++
++#include <linux/compiler_types.h>
++#include <linux/types.h>
++
++/* Shared by patched common and SukiSU: SUSFS resolves getname() before hooks. */
++struct filename;
++extern bool ksu_su_compat_enabled;
++int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode,
++                        int *flags);
++int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
++int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr, size_t *count_ptr);
++
++#endif

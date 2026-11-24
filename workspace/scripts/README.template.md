@@ -1,25 +1,26 @@
-# 小米 13：SukiSU 40900 + SUSFS 2.3.0 r2 修复候选
+# 小米 13：SukiSU {driver_version} + SUSFS {susfs_short} {release_suffix} 修复候选
 
 本候选从 2026-11-10 保存的 r1 基线修复已审查缺陷，内核后缀为
-`suki40900-susfs230-r2`。原 r1 成品与只读基线保留，r2 不覆盖其发布目录。
+`suki{driver_version}-susfs{susfs_compact}-{release_suffix}`。原 r1 成品与只读基线保留，{release_suffix} 不覆盖其发布目录。
 重点修复重定向对象生命周期、RCU 查找、查询分配失败、规则键匹配及
-readlink 长度/释放处理。对应的 SUSFS 模块 local2 单独打包，修复 WebUI
+readlink 长度/释放处理。CPU 伪装只改上报的 MIDR，不再改写 udelay 校准
+（loops_per_jiffy）和 HWCAP；BogoMIPS 与 HWCAP 参数必须为 0。对应的 SUSFS 模块 {module_local} 单独打包，修复 WebUI
 回调、日志开关和 uname 保存；它不包含在内核 AnyKernel ZIP 中。
 
-这是新编译的 5.15.194 内核，使用官方 builtin v4.2.0 源码
-e2912817f4e1b194e582a06e0b5eacf6a3fb7083，与官方 Manager 40900 配套，
-并整合 SUSFS bca0d2333c1a7d717e7278b019d7af7ba1d16005 / v2.3.0。
+这是新编译的 {kernel_version} 内核，使用官方 builtin {manager_tag} 源码
+{driver_commit}，与官方 Manager {manager_version_code} 配套，
+并整合 SUSFS {susfs_commit} / {susfs_version}。
 完整本地版本保留 builtin 源码身份，不把它冒充为原生 Tracepoint 分支。
-驱动 40900 使用该 builtin 分支上游的 main 发布计数规则固定，接口及实际处理器
+驱动 {driver_version} 使用该 builtin 分支上游的 main 发布计数规则固定，接口及实际处理器
 单独检查；没有只给旧 37974 驱动改数字或关闭 Manager 警告。
 
-common 基线为 f4321180a3973d19b626b3eef51871199e4e1fac；保留 Full LTO、
+common 基线为 {common_commit}；保留 Full LTO、
 CFI、MODVERSIONS、MODULE_SIG_PROTECT 和严格 KMI。没有引入 LKM、Magisk 或 KPM。
 编译使用 8 个任务，锁定 Full LTO 单分区与默认 2 个链接线程；这是 r1
 成功构建实际使用的配置。锁定的 Clang 14 / CFI / BTF 组合拒绝多分区，
 避免 BTF 内部符号与 CFI 跳表在分区间失配。
 SUSFS 原有路径、挂载、kstat、uname、符号隐藏、启动参数、重定向和映射功能
-均要求配置启用。tools/ksu_susfs 是与此 v2.3.0 源码配套的 ARM64 工具。
+均要求配置启用。tools/ksu_susfs 是与此 {susfs_version} 源码配套的 ARM64 工具。
 
 候选包通过编译与离线检查后才发布。构建期间冻结候选输入，并把源码、
 配置与生成的二进制摘要绑定；验收拒绝无构建记录或源码/镜像混配。
@@ -43,12 +44,12 @@ AnyKernel3 ZIP 只接受 fuxi，目标为活动槽 boot；不会替换 init_boot
 ## 完成等级和 SUSFS 配套
 
 这份交付的运行时兼容性尚未由此离线流程证明。必须在另行授权的临时启动测试中
-核对 40900/40900 无告警、Root、SUSFS v2.3.0 版本及功能查询，并实际验证应用
+核对 {manager_version_code}/{driver_version} 无告警、Root、SUSFS {susfs_version} 版本及功能查询，并实际验证应用
 状态标记、挂载隔离和所需硬件路径。仅看到配置为 y、CRC 相同或模块签名有效
 不足以证明全部运行功能。此前无 SUSFS 对照内核的实测不算本包的实机验证。
 
-本次保持 SUSFS 2.3.0，不变更 Manager/驱动 40900 或已锁定的控制接口。
-内核包不自动替换模块脚本；local2 模块继续使用经核验的 R28 ARM64 工具，
+本次保持 SUSFS {susfs_short}，不变更 Manager/驱动 {driver_version} 或已锁定的控制接口。
+内核包不自动替换模块脚本；{module_local} 模块继续使用经核验的 {module_release} ARM64 工具，
 与随内核源码编译的交付工具是两份不同二进制。只读验收命令：
 
     ksu_susfs show version
@@ -60,8 +61,8 @@ AnyKernel3 ZIP 只接受 fuxi，目标为活动槽 boot；不会替换 init_boot
 ## 源码重建记录
 
 source/common-base.tar.gz 是锁定 common 提交的原始源码，
-source/builtin-e2912817.tar.gz、source/susfs-bca0d233.tar.gz 和
-source/manager-904c60d1.tar.gz 是独立锁定归档。将 common 解包至 kernel/common，
+source/{builtin_archive}、source/{susfs_archive} 和
+source/{manager_archive} 是独立锁定归档。将 common 解包至 kernel/common，
 将 builtin 归档根目录放至 kernel/KernelSU，分别实际应用
 source-diffs/common.diff、source-diffs/SukiSU.diff。common 补丁必须创建
 drivers/kernelsu 指向 ../../KernelSU/kernel 的链接；SUSFS 内核实现已包含在最终

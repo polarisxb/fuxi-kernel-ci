@@ -37,7 +37,12 @@ class ExportTests(unittest.TestCase):
         (self.release / "public-certificates").mkdir()
         (self.release / "public-certificates/signing_key.x509").write_bytes(b"public fixture")
         (self.release / "Image").write_bytes(b"test Image")
-        (self.release / "kernel.release").write_text("test-r2\n")
+        diffs = self.release / "source-diffs"
+        diffs.mkdir()
+        (diffs / "common.diff").write_bytes(b"common patch\n")
+        (diffs / "SukiSU.diff").write_bytes(b"driver patch\n")
+        (diffs / "integrated-source-manifest.json").write_bytes(b"{}\n")
+        (self.release / "kernel.release").write_bytes(b"test-release\n")
         with zipfile.ZipFile(self.release / E.KERNEL_ZIP, "w") as archive:
             archive.writestr("Image", b"test Image")
         self.inventory = {"files": {E.KERNEL_ZIP: {
@@ -50,6 +55,8 @@ class ExportTests(unittest.TestCase):
         (module / "service.sh").chmod(0o755)
         self.module = module
         (self.release / "configs").mkdir()
+        identity = dict(E.IDENTITY, actual_kernel_version=E.IDENTITY["kernel_version"])
+        (self.release / "configs/build-identity.json").write_bytes(json.dumps(identity).encode())
         (self.release / "reports").mkdir()
         self.refresh_source_attestation()
         real_spec = importlib.util.spec_from_file_location(
@@ -81,8 +88,8 @@ class ExportTests(unittest.TestCase):
                              if item.is_file() and not item.is_symlink()},
         }))
         (self.release / "reports/build-provenance.json").write_text(json.dumps({
-            "inputs": {"configs": {"ci-source.json": {
-                "type": "file", "sha256": digest(path), "executable": False}}}}))
+            "inputs": {"configs": {p.name: {"type": "file", "sha256": digest(p), "executable": False}
+                                  for p in (self.release / "configs").iterdir()}}}))
 
     def test_only_named_public_payloads_exported(self):
         result = self.export()
@@ -92,7 +99,10 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(result["source_sha"], "a" * 40)
         with zipfile.ZipFile(dist / E.MODULE_ZIP) as archive:
             self.assertEqual(archive.read("service.sh"), (self.module / "service.sh").read_bytes())
-            self.assertEqual((archive.getinfo("service.sh").external_attr >> 16) & 0o777, 0o755)
+            zip_mode = (archive.getinfo("service.sh").external_attr >> 16) & 0o777
+            self.assertEqual(zip_mode, (self.module / "service.sh").stat().st_mode & 0o777)
+            if os.name == "posix":
+                self.assertEqual(zip_mode, 0o755)
         for line in (dist / "SHA256SUMS").read_text().splitlines():
             expected, name = line.split("  ", 1)
             self.assertEqual(digest(dist / name), expected)
@@ -100,6 +110,20 @@ class ExportTests(unittest.TestCase):
     def test_failed_report_rejected_before_output(self):
         (self.reports / "post-regressions.json").write_text(json.dumps({"passed": False}))
         with self.assertRaisesRegex(ValueError, "post_regressions"):
+            self.export()
+        self.assertFalse((self.root / "dist").exists())
+
+    def test_source_identity_matches_delivered_bytes(self):
+        self.export()
+        metadata = json.loads((self.root / "dist/kernel-build-info.json").read_bytes())
+        self.assertEqual(metadata["source_identity"], {
+            name: digest(self.release / "source-diffs" / name)
+            for name in ("common.diff", "SukiSU.diff", "integrated-source-manifest.json")
+        })
+
+    def test_missing_source_manifest_prevents_export(self):
+        (self.release / "source-diffs/integrated-source-manifest.json").unlink()
+        with self.assertRaises(FileNotFoundError):
             self.export()
         self.assertFalse((self.root / "dist").exists())
 
@@ -148,6 +172,16 @@ class ExportTests(unittest.TestCase):
         source["extra"] = "changed"
         path.write_text(json.dumps(source))
         with self.assertRaisesRegex(ValueError, "not bound"):
+            self.export()
+        self.assertFalse((self.root / "dist").exists())
+
+    def test_delivered_build_identity_must_match_checkout_even_if_rehashed(self):
+        path = self.release / "configs/build-identity.json"
+        identity = json.loads(path.read_bytes())
+        identity["driver_version"] += 1
+        path.write_bytes(json.dumps(identity).encode())
+        self.refresh_source_attestation()
+        with self.assertRaisesRegex(ValueError, "repository lock"):
             self.export()
         self.assertFalse((self.root / "dist").exists())
 

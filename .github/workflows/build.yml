@@ -63,7 +63,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/fuxi-inputs
-          key: fuxi-kernel-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
+          key: fuxi-kernel-inputs-${{ runner.os }}-${{ hashFiles('ci-layout.json', 'configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
       - name: Build and verify the signed kernel ZIP
         env:
           KERNEL_SIGNING_KEY_PEM: ${{ secrets.KERNEL_SIGNING_KEY_PEM }}
@@ -112,7 +112,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/fuxi-inputs
-          key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('configs/manifest.locked.xml', 'reference/inputs.lock.json', 'src/SukiSU/Cargo.lock') }}
+          key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('ci-layout.json', 'configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
       - name: Build the matching ARM64 status detector
         env:
           FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
@@ -155,14 +155,15 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import hashlib, json, os, re, shutil
+          import hashlib, json, os, re, shutil, subprocess, sys
           from pathlib import Path
           root = Path('collected')
           dist = Path('release-dist')
           expected = os.environ['GITHUB_SHA']
+          identity = json.loads(subprocess.check_output([sys.executable, 'scripts/identity.py', '--json']))
           allowed = {
-              'kernel': ('Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip', 'SUSFS_R28_Fuxi230_40900_local2.zip'),
-              'native': ('Fuxi_SukiSU_40900_Zygisk_StatusFix.zip', 'libksud.so'),
+              'kernel': (identity['kernel_zip'], identity['module_zip']),
+              'native': (identity['native_zip'], 'libksud.so'),
           }
           metadata = {}
           verified_files = []

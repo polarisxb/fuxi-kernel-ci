@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline verification of the fuxi 5.15.194 baseline or SukiSU build.
+"""Offline verification of the locked fuxi baseline or SukiSU build.
 
 Never accesses a device. A passing result is not a complete ABI or runtime claim.
 """
@@ -23,7 +23,8 @@ sys.dont_write_bytecode = True
 
 ROOT = Path(__file__).resolve().parent.parent
 STOCK = ROOT / 'inputs/stock'
-EXPECTED_SOURCE = 'f4321180a3973d19b626b3eef51871199e4e1fac'
+IDENTITY = json.loads((ROOT / 'configs/build-identity.json').read_bytes())
+EXPECTED_SOURCE = IDENTITY['common_commit']
 NM = ROOT / 'kernel/prebuilts/clang/host/linux-x86/clang-r450784e/bin/llvm-nm'
 REQUIRED_CONFIG = {
     'CONFIG_LTO_CLANG_FULL': 'y', 'CONFIG_LTO_CLANG_THIN': 'n',
@@ -296,7 +297,7 @@ def verify(args):
         if elf[:6] != b'\x7fELF\x02\x01' or struct.unpack_from('<H', elf, 18)[0] != 183:
             raise ValueError('vmlinux is not little-endian ELF64 AArch64')
         release = (out / 'include/config/kernel.release').read_text().strip()
-        if args.expected_ksu == 'yes' and release != '5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r2':
+        if args.expected_ksu == 'yes' and release != IDENTITY['kernel_release']:
             raise ValueError(f'Unexpected release {release}')
         embedded = command([ROOT / 'kernel/common/scripts/extract-ikconfig', image_path])
         if embedded != (out / '.config').read_bytes():
@@ -313,10 +314,10 @@ def verify(args):
         if args.expected_ksu == 'yes':
             if not any('ksu_' in k for k in addresses) or not any('susfs_' in k for k in addresses):
                 raise ValueError('Missing SukiSU/SUSFS symbols in System.map')
-            if b'v4.2.0-builtin-e2912817-susfs-local' not in data:raise ValueError('Image lacks expected real builtin release identity')
-            if b'v2.3.0' not in data:raise ValueError('Image lacks SUSFS2.3 version')
+            if IDENTITY['driver_version_full'].encode() not in data:raise ValueError('Image lacks expected real builtin release identity')
+            if IDENTITY['susfs_version'].encode() not in data:raise ValueError('Image lacks locked SUSFS version')
             commands=list((out/'drivers/kernelsu').glob('.*.cmd'))
-            if not commands or not any(b'-DKSU_VERSION=40900' in item.read_bytes() for item in commands):raise ValueError('Actual driver compilation did not use40900')
+            if not commands or not any(('-DKSU_VERSION=' + str(IDENTITY['driver_version'])).encode() in item.read_bytes() for item in commands):raise ValueError('Actual driver compilation did not use the locked version')
         return {'Image_sha256': sha256(image_path), 'Image_bytes': len(data),
                 'memory_size': memory_size, 'text_offset': text_offset, 'flags': flags,
                 'release': release, 'embedded_config_matches': True, 'vmlinux_architecture': 'AArch64',

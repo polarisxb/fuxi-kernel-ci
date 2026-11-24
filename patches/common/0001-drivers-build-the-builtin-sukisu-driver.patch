@@ -1,0 +1,28 @@
+Subject: drivers: build the builtin SukiSU driver
+Upstream-Status: Inappropriate [integration step; SukiSU's kernel/setup.sh makes the same edits]
+Drop-when: never; this is how the driver enters the kernel build
+
+Add drivers/kernelsu to drivers/Kconfig and drivers/Makefile, as
+SukiSU's setup.sh does for a builtin build. bootstrap creates the
+drivers/kernelsu symlink from configs/source-links.json.
+---
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 0d399ddaa185a7cdf5974f7f294f50032747f577..6ed612d9c97d760df6e4d70e6b509bcecff3d7e2 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -236,4 +236,5 @@ source "drivers/interconnect/Kconfig"
+ source "drivers/counter/Kconfig"
+ 
+ source "drivers/most/Kconfig"
++source "drivers/kernelsu/Kconfig"
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index a110338c860c770d4affa688375dc2086007a6b5..f25c0c20e405d09ddadb823dff9a1218d08909d2 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -187,3 +187,5 @@ obj-$(CONFIG_GNSS)		+= gnss/
+ obj-$(CONFIG_INTERCONNECT)	+= interconnect/
+ obj-$(CONFIG_COUNTER)		+= counter/
+ obj-$(CONFIG_MOST)		+= most/
++
++obj-$(CONFIG_KSU) += kernelsu/

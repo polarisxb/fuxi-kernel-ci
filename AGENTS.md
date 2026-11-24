@@ -9,13 +9,17 @@ Use native subagents for bounded independent work when it improves throughput.
 This repository is designed for Windows development and Linux compilation in
 GitHub Actions. Do not require a local Ubuntu setup for reading or editing code.
 
-- `src/common/` contains actual edited Linux files over a fixed upstream commit.
-  CI combines them with the locked upstream, regenerates source diffs, and builds.
-  To read/import another upstream file, use `scripts/source.py`; do not edit a
-  generated `.work/` checkout or replace actual sources with stale patches.
-- `src/KernelSU/` is the current builtin SukiSU driver used by the kernel.
-- `src/SukiSU/` contains the matching Manager/userspace source. Its CI build keeps
-  the original Git history so versionCode 40900 is real, not fabricated.
+- Upstream code is never committed. `ci-layout.json` (`upstreams`) pins
+  kernel/common, SUSFS, the SukiSU builtin driver, the SukiSU Manager and the NDK;
+  `configs/manifest.locked.xml` must agree with it.
+- Local changes live in `patches/common`, `patches/driver` and `patches/manager`,
+  applied in `series` order after the official SUSFS kernel patch. One patch per
+  logical change, each with `Subject:`, `Upstream-Status:` and `Drop-when:`.
+  Edit them only through `scripts/source.py edit|new|refresh`; never reintroduce
+  vendored upstream trees or full-file overlays. Submit real upstream bug fixes and
+  drop the patch once upstream has it.
+- The Manager CI build keeps the original Git history so versionCode 40900 is real,
+  not fabricated.
 - `module/` contains the matching SUSFS local2 module source.
 - `configs/`, `ci-layout.json` and `reference/inputs.lock.json` lock compatibility,
   source revisions, tools and public verification inputs. Change locks explicitly.

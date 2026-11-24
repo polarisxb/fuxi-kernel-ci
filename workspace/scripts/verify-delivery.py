@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the actual, immutable 40900 + SUSFS delivery without a device."""
+"""Verify the immutable delivery against its recorded build identity."""
 import argparse
 import gzip
 import hashlib
@@ -19,20 +19,23 @@ import zipfile
 # Local helper imports must not mutate an exact, immutable delivery inventory.
 sys.dont_write_bytecode = True
 
-COMMON_SHA = 'f4321180a3973d19b626b3eef51871199e4e1fac'
-BUILTIN_SHA = 'e2912817f4e1b194e582a06e0b5eacf6a3fb7083'
-SUSFS_SHA = 'bca0d2333c1a7d717e7278b019d7af7ba1d16005'
-APK_NAME = 'SukiSU_v4.2.0_40900-release.apk'
-APK_SHA = '4ca9810e6355fbff0bbe4bf5ce159808e64a40d85987a11894030cd990a6bdf3'
-ZIP_NAME = 'Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip'
+ROOT = Path(__file__).resolve().parents[1]
+# Source-manifest users import this module before a workspace is assembled.
+IDENTITY_PATH = ROOT / 'configs/build-identity.json'
+IDENTITY = json.loads(IDENTITY_PATH.read_text()) if IDENTITY_PATH.is_file() else {}
+COMMON_SHA = IDENTITY.get('common_commit')
+BUILTIN_SHA = IDENTITY.get('driver_commit')
+SUSFS_SHA = IDENTITY.get('susfs_commit')
+APK_NAME = IDENTITY.get('apk_name')
+APK_SHA = IDENTITY.get('apk_sha256')
+ZIP_NAME = IDENTITY.get('kernel_zip')
 CORE_SHA = 'f7a51cfe2e093016a34a76e16de6c9885c2d1992c3482fcabc668680e1f0f6bb'
-REQUIRED = {
+BASE_REQUIRED = {
     'Image', 'vmlinux', 'boot.img', '.config', 'System.map', 'Module.symvers',
-    'kernel.release', 'manifest.locked.xml', 'README.zh-CN.md', APK_NAME, ZIP_NAME,
+    'kernel.release', 'manifest.locked.xml', 'README.zh-CN.md', 'configs/build-identity.json',
     'matching-gki-modules/zram.ko', 'matching-gki-modules/zsmalloc.ko',
     'public-certificates/signing_key.x509', 'tools/ksu_susfs',
-    'source/common-base.tar.gz', 'source/builtin-e2912817.tar.gz',
-    'source/susfs-bca0d233.tar.gz', 'source/manager-904c60d1.tar.gz',
+    'source/common-base.tar.gz',
     'source-diffs/common.diff', 'source-diffs/SukiSU.diff',
     'source-diffs/integrated-source-manifest.json',
     'reports/offline/verification.json', 'reports/offline/built-module-checks.json',
@@ -57,6 +60,26 @@ SUSFS_OPTIONS = {
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def read_identity(root):
+    identity = json.loads((root / 'configs/build-identity.json').read_text())
+    require(isinstance(identity, dict), 'Invalid build identity')
+    # Required filenames must stay inside their named package directories.
+    for key in ('apk_name', 'kernel_zip', 'builtin_archive', 'susfs_archive', 'manager_archive'):
+        value = identity.get(key, '')
+        require(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._+-]*', value),
+                f'Invalid build identity filename: {key}')
+    return identity
+
+
+def required_files(identity):
+    return BASE_REQUIRED | {identity['apk_name'], identity['kernel_zip']} | {
+        'source/' + identity[key] for key in ('builtin_archive', 'susfs_archive', 'manager_archive')
+    }
+
+
+REQUIRED = required_files(IDENTITY) if IDENTITY else BASE_REQUIRED
 
 
 def run(args, **kwargs):
@@ -85,7 +108,7 @@ def safe_relative(value):
 def files_in(root):
     result = {}
     for path in root.rglob('*'):
-        relative = str(path.relative_to(root))
+        relative = path.relative_to(root).as_posix()
         require(not path.is_symlink(), f'Delivery contains a symlink: {relative}')
         if path.is_file():
             safe_relative(relative)
@@ -110,16 +133,17 @@ def write_inventory(root, identity):
 
 
 def verify_inventory(root):
+    identity = read_identity(root)
     paths = files_in(root)
-    missing = REQUIRED - paths.keys()
+    missing = required_files(identity) - paths.keys()
     require(not missing, f'Missing required delivery files: {sorted(missing)}')
     require({'RELEASE.json', 'SHA256SUMS'} <= paths.keys(), 'Missing release inventory/checksums')
     release = json.loads(paths['RELEASE.json'].read_text())
     require(release.get('schema_version') == 1, 'Unsupported inventory schema')
-    for key, expected in {'common_sha': COMMON_SHA, 'builtin_sha': BUILTIN_SHA,
-                          'susfs_sha': SUSFS_SHA, 'manager_version': 40900,
-                          'driver_version': 40900, 'uapi_version': 2,
-                          'profile_version': 4, 'susfs_version': 'v2.3.0'}.items():
+    for key, expected in {'common_sha': identity['common_commit'], 'builtin_sha': identity['driver_commit'],
+                          'susfs_sha': identity['susfs_commit'], 'manager_version': identity['manager_version_code'],
+                          'driver_version': identity['driver_version'], 'uapi_version': 2,
+                          'profile_version': 4, 'susfs_version': identity['susfs_version']}.items():
         require(release.get(key) == expected, f'Incorrect release identity: {key}')
     actual_names = paths.keys() - {'RELEASE.json', 'SHA256SUMS'}
     require(release['files'].keys() == actual_names, 'Inventory differs from actual file set')
@@ -137,7 +161,7 @@ def verify_inventory(root):
     require(sums.keys() == paths.keys() - {'SHA256SUMS'}, 'Checksum file set differs')
     for name, digest in sums.items():
         require(sha256(paths[name]) == digest, f'Checksum mismatch: {name}')
-    require(sha256(paths[APK_NAME]) == APK_SHA, 'Manager APK is not the locked official 40900 APK')
+    require(sha256(paths[identity['apk_name']]) == identity['apk_sha256'], 'Manager APK is not the locked official APK')
     modules = {str(p.relative_to(root / 'matching-gki-modules'))
                for p in (root / 'matching-gki-modules').rglob('*') if p.is_file()}
     require(modules == {'zram.ko', 'zsmalloc.ko'}, f'Incorrect module file set: {modules}')
@@ -157,10 +181,11 @@ def exports(path):
 
 
 def verify_image(root):
+    identity = read_identity(root)
     image = (root / 'Image').read_bytes()
     require(image[56:60] == b'ARM\x64', 'Not an AArch64 Image')
-    require(b'v4.2.0-builtin-e2912817-susfs-local' in image, 'Incorrect builtin release identity')
-    require(b'v2.3.0' in image, 'SUSFS 2.3.0 identity absent from Image')
+    require(identity['driver_version_full'].encode() in image, 'Incorrect builtin release identity')
+    require(identity['susfs_version'].encode() in image, 'SUSFS identity absent from Image')
     config = (root / '.config').read_bytes()
     start = image.find(b'IKCFG_ST')
     end = image.find(b'IKCFG_ED', start + 8)
@@ -174,7 +199,7 @@ def verify_image(root):
     require(options.get('CONFIG_LTO_CLANG_THIN', 'n') == 'n', 'ThinLTO must remain disabled')
     require(options.get('CONFIG_KPM', 'n') == 'n', 'Unexpected KPM feature')
     release = (root / 'kernel.release').read_text().strip()
-    require(release == '5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r2',
+    require(release == identity['kernel_release'],
             f'Incorrect kernel release {release}')
     with tempfile.TemporaryDirectory(prefix='delivery-image-') as temp:
         output = Path(temp) / 'Image'
@@ -192,7 +217,7 @@ def verify_image(root):
     uapi = json.loads((root / 'reports/uapi/complete-uapi-alignment.json').read_text())
     require(uapi.get('compared_shared_ioctl_constants') == 31
             and uapi.get('arm64_values_all_equal') is True
-            and uapi.get('profile_version') == 4, 'Incomplete Manager40900 UAPI validation')
+            and uapi.get('profile_version') == 4, 'Incomplete Manager UAPI validation')
     return release
 
 
@@ -211,8 +236,9 @@ def verify_boot(root):
 
 
 def verify_zip(root):
+    identity = read_identity(root)
     expected = json.loads((root / 'reports/anykernel-template.json').read_text())
-    with zipfile.ZipFile(root / ZIP_NAME) as archive:
+    with zipfile.ZipFile(root / identity['kernel_zip']) as archive:
         names = archive.namelist()
         require(len(names) == len(set(names)), 'Duplicate AnyKernel ZIP entries')
         require(set(names) == set(expected) | {'Image', 'anykernel.sh'}, 'AnyKernel entry set changed')
@@ -229,7 +255,8 @@ def verify_zip(root):
         require(re.findall(r'^device.name\d+=(.*)$', script, re.M) == ['fuxi']
                 and 'BLOCK=boot;' in script and 'do.devicecheck=1' in script,
                 'AnyKernel device or target changed')
-        require('40900' in script and 'SUSFS 2.3.0' in script, 'Incorrect AnyKernel release label')
+        require(str(identity['driver_version']) in script and 'SUSFS ' + identity['susfs_short'] in script,
+                'Incorrect AnyKernel release label')
 
 
 def verify_modules(root):
@@ -281,13 +308,14 @@ def extract(archive, destination):
 
 
 def verify_replay(root):
+    identity = read_identity(root)
     expected = json.loads((root / 'source-diffs/integrated-source-manifest.json').read_text())
     with tempfile.TemporaryDirectory(prefix='delivery-source-replay-') as temp:
         temp = Path(temp)
         common = temp / 'kernel/common'
         extract(root / 'source/common-base.tar.gz', common)
         unpack = temp / 'unpack'
-        extract(root / 'source/builtin-e2912817.tar.gz', unpack)
+        extract(root / 'source' / identity['builtin_archive'], unpack)
         children = list(unpack.iterdir())
         require(len(children) == 1 and children[0].is_dir(), 'Unexpected builtin archive layout')
         ksu = temp / 'kernel/KernelSU'
@@ -306,13 +334,14 @@ def verify_replay(root):
         require(re.search(r'^config\s+KSU_SUSFS\s*$', (ksu / 'kernel/Kconfig').read_text(), re.M)
                 and 'susfs_init();' in (ksu / 'kernel/ksu.c').read_text()
                 and 'void susfs_init(void)' in (common / 'fs/susfs.c').read_text()
-                and '#define SUSFS_VERSION "v2.3.0"' in (common / 'include/linux/susfs.h').read_text(),
-                'Replayed source does not implement the required SUSFS 2.3.0 initialization')
+                and '#define SUSFS_VERSION "' + identity['susfs_version'] + '"' in (common / 'include/linux/susfs.h').read_text(),
+                'Replayed source does not implement the required SUSFS initialization')
     return True
 
 
 def verify_delivery(root):
     root = root.resolve()
+    identity = read_identity(root)
     release, count = verify_inventory(root)
     kernel_release = verify_image(root)
     verify_boot(root)
@@ -327,8 +356,8 @@ def verify_delivery(root):
     provenance.verify_delivered(root)
     verify_replay(root)
     return {'passed': True, 'files': count, 'kernel_release': kernel_release,
-            'driver_version': release['driver_version'], 'manager_version': 40900,
-            'susfs_version': 'v2.3.0', 'complete_source_replay': True,
+            'driver_version': release['driver_version'], 'manager_version': identity['manager_version_code'],
+            'susfs_version': identity['susfs_version'], 'complete_source_replay': True,
             'build_input_output_provenance_verified': True,
             'runtime_compatibility_verified': False, 'phone_operations': False,
             'limitations': ['No device was accessed. SUSFS runtime behavior requires an authorized boot test.',

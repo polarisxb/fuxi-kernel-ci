@@ -1,0 +1,106 @@
+Subject: cpu_spoof: only spoof the reported MIDR
+Upstream-Status: Pending [SukiSU-Nova main 1439545f kernel/extension/cpu_spoof.c still writes loops_per_jiffy and elf_hwcap]
+Drop-when: upstream cpu_spoof leaves loops_per_jiffy and elf_hwcap alone
+
+loops_per_jiffy is the arm64 udelay() calibration and elf_hwcap feeds
+AT_HWCAP/AT_HWCAP2. The Manager pre-fills BogoMIPS 38 (the kernel
+expects 3840) and HWCAP 0, so applying its defaults made every delay
+about 100x shorter and cleared all HWCAPs. Reject non-zero
+bogomips/hwcap/hwcap2 before any change. Covered by
+workspace/tests/test_cpu_spoof.py.
+---
+diff --git a/kernel/feature/cpu_spoof.c b/kernel/feature/cpu_spoof.c
+index c4c95f9de76895d01de44a518ead78adf397e1d7..8cb50a07457924e38bc95314fab295c6df63ffc0 100644
+--- a/kernel/feature/cpu_spoof.c
++++ b/kernel/feature/cpu_spoof.c
+@@ -75,67 +75,35 @@ int ksu_set_spoof_cpu(const struct ksu_set_spoof_cpu_cmd *cmd)
+     }
+ 
+ #if defined(CONFIG_ARM64) || defined(__aarch64__)
+-    /* This pinned android13-5.15 branch stores HWCAP/HWCAP2 as the low/high
+-     * 32 bits of one elf_hwcap word (cpu_get_elf_hwcap{,2}()). Reject values
+-     * that cannot be represented before applying any change.
++    /* Spoof only the reported MIDR. On arm64, loops_per_jiffy is the
++     * udelay()/ndelay() calibration (xloops_to_cycles()), and elf_hwcap feeds
++     * AT_HWCAP/AT_HWCAP2 and the HWCAP check run when a CPU comes online, so
++     * neither is a display value. Upstream rewrote both from this request:
++     * the Manager's pre-filled BogoMIPS of 38 (kernel unit: 3840) made every
++     * delay about 100x shorter, and the default hwcap of 0 cleared all
++     * HWCAPs. Accept only 0 ("unchanged") and fail before any mutation.
+      */
+-    if ((cmd->hwcap >> 32) || (cmd->hwcap2 >> 32))
+-        return -ERANGE;
++    if (cmd->bogomips || cmd->hwcap || cmd->hwcap2) {
++        pr_warn("ksu: set_spoof_cpu only spoofs MIDR; bogomips/hwcap/hwcap2 must be 0\n");
++        return -EOPNOTSUPP;
++    }
+ 
+-    /* Fail before any mutation if the required target data is unavailable.
+-     * The upstream handler merely logged failed lookups and returned success.
+-     */
+-    if (!ksu_release_lookup_data_symbol("cpu_data"))
+-        return -ENOENT;
+-    if (cmd->cpu_index == 0 &&
+-        (!ksu_release_lookup_data_symbol("loops_per_jiffy") ||
+-         !ksu_release_lookup_data_symbol("elf_hwcap")))
+-        return -ENOENT;
+-
+-    /* 1. Resolve 'cpu_data' and overwrite target core MIDR (executed for each CPU) */
+     {
++        /* Fail before any mutation if the required target data is unavailable.
++         * The upstream handler merely logged failed lookups and returned success.
++         */
+         unsigned long cpu_data_base = ksu_release_lookup_data_symbol("cpu_data");
+-        if (cpu_data_base) {
+-            struct cpuinfo_arm64 *info = per_cpu_ptr((struct cpuinfo_arm64 *)cpu_data_base, cmd->cpu_index);
+-            if (info) {
+-                info->reg_midr = cmd->midr;
+-            }
+-        } else {
+-            pr_warn("ksu: set_spoof_cpu failed to resolve 'cpu_data'\n");
+-        }
+-    }
++        struct cpuinfo_arm64 *info;
+ 
+-    /* 2. Global modifications (executed exactly once on CPU 0) */
+-    if (cmd->cpu_index == 0) {
+-        /* A. Override global dynamic timing metric */
+-        unsigned long *lpj = (unsigned long *)ksu_release_lookup_data_symbol("loops_per_jiffy");
+-        if (lpj) {
+-            pr_info("ksu: set_spoof_cpu current global loops_per_jiffy: %lu\n", *lpj);
+-            *lpj = ((unsigned long)cmd->bogomips * 500000) / (100 * HZ);
+-            pr_info("ksu: set_spoof_cpu updated global loops_per_jiffy: %lu\n", *lpj);
+-        } else {
+-            pr_warn("ksu: set_spoof_cpu failed to resolve 'loops_per_jiffy'\n");
+-        }
+-
+-        /* B. Globally overwrite hardware capabilities */
+-        unsigned long *elf_hwcap_word = (unsigned long *)ksu_release_lookup_data_symbol("elf_hwcap");
+-        if (elf_hwcap_word) {
+-            /* Do not use upstream's [0]/[1] layout: on this branch the
+-             * second write would corrupt a neighboring kernel variable.
+-             */
+-            unsigned long packed = (unsigned long)cmd->hwcap |
+-                                   ((unsigned long)cmd->hwcap2 << 32);
+-            WRITE_ONCE(*elf_hwcap_word, packed);
+-            pr_info("ksu: set_spoof_cpu packed elf_hwcap: 0x%lx\n", packed);
+-        } else {
+-            pr_warn("ksu: set_spoof_cpu failed to resolve 'elf_hwcap'\n");
+-        }
+-
+-        /* A reported CPU identity does not change the physical CPU.
+-         * Preserve the real clocksource/vDSO synchronization and errata
+-         * capabilities instead of overriding them from a spoofed MIDR.
+-         */
++        if (!cpu_data_base)
++            return -ENOENT;
+ 
++        /* Only /proc/cpuinfo and sysfs midr_el1 report this field. Errata
++         * detection reads MIDR_EL1 itself, and bringing a CPU online stores
++         * the real value again.
++         */
++        info = per_cpu_ptr((struct cpuinfo_arm64 *)cpu_data_base, cmd->cpu_index);
++        info->reg_midr = cmd->midr;
+     }
+ #else
+     return -EOPNOTSUPP;

@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import posixpath
 import shutil
 import struct
 import subprocess
@@ -27,6 +28,29 @@ class BootstrapTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="fuxi-bootstrap-test-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+
+    def test_workspace_identity_and_project_lock(self):
+        configs = self.root / "configs"
+        configs.mkdir()
+        common = self.root / "kernel/common"
+        common.mkdir(parents=True)
+        projects = B.manifest_projects(ROOT / "configs/manifest.locked.xml")
+        version = B.LAYOUT["kernel_release"].split("-", 1)[0].split(".")
+        makefile = common / "Makefile"
+        makefile.write_bytes(("VERSION = %s\nPATCHLEVEL = %s\nSUBLEVEL = %s\nEXTRAVERSION =\n"
+                              % tuple(version)).encode())
+        B.write_workspace_identity(self.root, projects)
+        identity = json.loads((configs / "build-identity.json").read_bytes())
+        self.assertEqual(identity["actual_kernel_version"], identity["kernel_version"])
+        self.assertEqual(identity["kernel_release"], B.LAYOUT["kernel_release"])
+        entries = json.loads((configs / "locked-workspace-inputs.json").read_bytes())
+        self.assertEqual([(e["path"], e["sha"]) for e in entries],
+                         [(p["path"], p["revision"]) for p in projects])
+        self.assertIn("kernel/configs", [e["path"] for e in entries])
+        self.assertEqual([e["path"] for e in entries if not e["shared_readonly"]], ["common"])
+        makefile.write_bytes(b"VERSION = 0\nPATCHLEVEL = 0\nSUBLEVEL = 0\nEXTRAVERSION =\n")
+        with self.assertRaisesRegex(ValueError, "kernel version"):
+            B.write_workspace_identity(self.root, projects)
 
     def archive(self, members):
         path = self.root / "input.tar.gz"
@@ -97,6 +121,33 @@ class BootstrapTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 B.restore_links(workspace, {"bad": value})
 
+    def test_driver_archive_must_hold_exactly_one_source_tree(self):
+        archive = self.archive([("SukiSU-Ultra-e291/kernel/Makefile", "file", "obj-y += ksu.o\n"),
+                                ("SukiSU-Ultra-e291/uapi", "symlink", "./kernel/include/uapi")])
+        destination = self.root / "kernel/KernelSU"
+        B.extract_single_tree(archive, destination)
+        self.assertEqual((destination / "kernel/Makefile").read_text(), "obj-y += ksu.o\n")
+        # Newer tarfile "data" filters normalize link targets ("./a" -> "a").
+        target = os.readlink(destination / "uapi").replace("\\", "/")
+        self.assertEqual(posixpath.normpath(target), "kernel/include/uapi")
+        with self.assertRaisesRegex(ValueError, "already exists"):
+            B.extract_single_tree(archive, destination)
+        archive = self.archive([("first/a.c", "file", "a\n"), ("second/b.c", "file", "b\n")])
+        with self.assertRaisesRegex(ValueError, "Unexpected source archive layout"):
+            B.extract_single_tree(archive, self.root / "other")
+        self.assertFalse((self.root / "other").exists())
+
+    def test_kernel_assembly_stops_when_the_manifest_and_lock_disagree(self):
+        repo = self.root / "repo"
+        (repo / "configs").mkdir(parents=True)
+        (repo / "configs/manifest.locked.xml").write_text(
+            '<manifest><remote name="a" fetch="https://example.com/"/><default remote="a"/>'
+            '<project name="kernel/common" path="common" revision="' + "b" * 40 + '"/></manifest>')
+        with mock.patch.object(B, "REPO", repo), mock.patch.object(B, "git_cache") as fetch:
+            with self.assertRaisesRegex(ValueError, "pin different kernel/common"):
+                B.prepare_kernel(self.root / "workspace", self.root / "cache")
+        fetch.assert_not_called()
+
     def test_manifest_requires_exact_git_revision(self):
         path = self.root / "manifest.xml"
         path.write_text('<manifest><remote name="a" fetch="https://example.com/"/>'
@@ -105,6 +156,7 @@ class BootstrapTests(unittest.TestCase):
         path.write_text(path.read_text().replace('revision="main"', 'revision="' + "a" * 40 + '"'))
         self.assertEqual(B.manifest_projects(path)[0]["revision"], "a" * 40)
 
+    @unittest.skipUnless(os.name == "posix", "git_cache serializes with fcntl locks on Linux CI")
     def test_real_git_checkout_is_pinned_without_modifying_mirror(self):
         mirror = self.root / "mirror"; mirror.mkdir()
         B.run(["git", "init", "-q", mirror])
@@ -125,22 +177,26 @@ class BootstrapTests(unittest.TestCase):
     def native_workspace(self):
         """Keep Git trust checks real; stub only external compiler/ELF tools."""
         repo = self.root / "repo"
-        source = repo / "src/SukiSU"
-        source.mkdir(parents=True)
-        (source / "Cargo.lock").write_text("locked original dependencies\n")
-        (source / "uapi.h").write_text("original UAPI\n")
+        queue = repo / "patches/manager"
+        queue.mkdir(parents=True)
+        (queue / "series").write_bytes(b"0001-patch-the-fixture-uapi.patch\n")
+        (queue / "0001-patch-the-fixture-uapi.patch").write_bytes(
+            b"Subject: Patch the fixture UAPI\nUpstream-Status: Inappropriate [test fixture]\n"
+            b"Drop-when: never\n\nApply the manager queue to the pinned checkout.\n---\n"
+            b"diff --git a/uapi.h b/uapi.h\n--- a/uapi.h\n+++ b/uapi.h\n"
+            b"@@ -1 +1 @@\n-original UAPI\n+patched UAPI\n")
         (repo / "module").mkdir()
         (repo / "module/module.prop").write_text("version=local2\n")
-        (repo / "configs").mkdir()
-        (repo / "configs/source-links.json").write_text('{"manager_links": {}}\n')
         (repo / "reference").mkdir()
         for name in ("manager-arm64-uapi.json", "arm64-uapi-probe.rs.in"):
             shutil.copy2(ROOT / "reference" / name, repo / "reference" / name)
         (repo / "workspace/scripts").mkdir(parents=True)
         shutil.copy2(ROOT / "workspace/scripts/verify-delivery.py", repo / "workspace/scripts/verify-delivery.py")
         work = self.root / "native"
-        work.mkdir()
-        shutil.copytree(source, work / "source")
+        # Stands in for the pinned upstream Manager checkout; git_cache/checkout are stubbed.
+        (work / "source").mkdir(parents=True)
+        (work / "source/Cargo.lock").write_bytes(b"locked original dependencies\n")
+        (work / "source/uapi.h").write_bytes(b"original UAPI\n")
         (work / "source/uapi-link").symlink_to("uapi.h")
         (work / "ndk").mkdir()
         (work / "ndk/tool").write_text("pinned tool\n")
@@ -160,7 +216,7 @@ class BootstrapTests(unittest.TestCase):
         ndk_sha = commit_tree(work / "ndk")
         expected = json.loads((repo / "reference/manager-arm64-uapi.json").read_text())
         self.probe_values = list(expected.values())
-        self.native_git_count = 3715
+        self.native_git_count = B.MANAGER_GIT_COUNT
         original_run = B.run
 
         def tool_run(args, cwd=None, env=None):
@@ -172,7 +228,7 @@ class BootstrapTests(unittest.TestCase):
                 if args[3:] == ["rev-list", "--count", "HEAD"]:
                     return str(self.native_git_count)
                 if args[3:] == ["describe", "--tags", "--always"]:
-                    return "v4.2.0-1-g904c60d1"
+                    return "v" + B.LAYOUT["identity"]["manager_version_name"]
             if args[0] == "readelf":
                 return ("/system/bin/linker64" if args[1] == "-lW"
                         else "(NEEDED) Shared library: [libc.so]")
@@ -204,12 +260,12 @@ class BootstrapTests(unittest.TestCase):
         build = target / "aarch64-linux-android/release/build/ksud-fixture"
         (build / "out").mkdir(parents=True)
         (build / "out/bindings.rs").write_text("// external compiler fixture\n")
-        (build / "output").write_text("cargo:rustc-env=VERSION_CODE=40900\n"
-                                      "cargo:rustc-env=VERSION_NAME=4.2.0-1-g904c60d1\n")
+        (build / "output").write_bytes((f"cargo:rustc-env=VERSION_CODE={B.LAYOUT['identity']['manager_version_code']}\n"
+                                       f"cargo:rustc-env=VERSION_NAME={B.LAYOUT['identity']['manager_version_name']}\n").encode())
         header = bytearray(64)
         header[:6] = b"\x7fELF\x02\x01"
         struct.pack_into("<HH", header, 16, 3, 183)
-        (target / "aarch64-linux-android/release/ksud").write_bytes(header + b"4.2.0-1-g904c60d1")
+        (target / "aarch64-linux-android/release/ksud").write_bytes(header + B.LAYOUT["identity"]["manager_version_name"].encode())
         return repo, work, target, self.root / "dist"
 
     def test_native_metadata_binds_completed_library_and_zip_without_circular_hash(self):
@@ -221,17 +277,21 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(external["source_sha"], B.run(["git", "-C", repo, "rev-parse", "HEAD"]))
         self.assertEqual(external["source_inputs"]["before"], external["source_inputs"]["after"])
         self.assertEqual(external["historical_tag"],
-                         {"name": "v4.2.0", "commit": B.MANAGER_TAG_SHA, "distance": 1, "restored": True})
-        self.assertEqual(external["source_inputs"]["before"]["ci_source"]["source_files"]["src/SukiSU/Cargo.lock"],
-                         B.sha256(repo / "src/SukiSU/Cargo.lock"))
+                         {"name": B.MANAGER_TAG, "commit": B.MANAGER_TAG_SHA, "distance": 1, "restored": True})
+        fixture_patch = "patches/manager/0001-patch-the-fixture-uapi.patch"
+        self.assertEqual(external["source_inputs"]["before"]["ci_source"]["source_files"][fixture_patch],
+                         B.sha256(repo / fixture_patch))
+        self.assertEqual((work / "source/uapi.h").read_bytes(), b"patched UAPI\n")
+        self.assertEqual(external["source_inputs"]["before"]["native_source"]["uapi.h"]["sha256"],
+                         B.sha256(work / "source/uapi.h"))
         self.assertEqual(external["source_inputs"]["before"]["native_source"]["uapi-link"],
                          {"type": "symlink", "target": "uapi.h"})
-        names = {"libksud.so", "Fuxi_SukiSU_40900_Zygisk_StatusFix.zip"}
+        names = {"libksud.so", B.load_helper("identity").derive(B.LAYOUT)["native_zip"]}
         self.assertEqual(set(external["artifacts"]), names)
         for name in names:
             path = dist / name
             self.assertEqual(external["artifacts"][name], {"sha256": B.sha256(path), "bytes": path.stat().st_size})
-        with zipfile.ZipFile(dist / "Fuxi_SukiSU_40900_Zygisk_StatusFix.zip") as bundle:
+        with zipfile.ZipFile(dist / B.load_helper("identity").derive(B.LAYOUT)["native_zip"]) as bundle:
             self.assertIsNone(bundle.testzip())
             self.assertEqual(set(bundle.namelist()), {"libksud.so", "native-build-info.json", "README.txt"})
             internal = json.loads(bundle.read("native-build-info.json"))
@@ -249,15 +309,15 @@ class BootstrapTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"CI_SOURCE_SHA": "a" * 40}):
             with self.assertRaisesRegex(ValueError, "actual checkout"):
                 B.verify_native(work, target, dist)
-        (repo / "src/SukiSU/uapi.h").write_text("uncommitted change\n")
+        (repo / "patches/manager/series").write_bytes(b"# uncommitted change\n0001-patch-the-fixture-uapi.patch\n")
         with self.assertRaisesRegex(ValueError, "clean Git checkout"):
             B.verify_native(work, target, dist)
         self.assertFalse(dist.exists())
 
     def test_native_rejects_clean_development_commit_changed_after_assembly(self):
         repo, work, target, dist = self.native_workspace()
-        (repo / "src/SukiSU/uapi.h").write_text("new committed source\n")
-        B.run(["git", "-C", repo, "add", "src/SukiSU/uapi.h"])
+        (repo / "patches/manager/series").write_bytes(b"# new committed queue\n0001-patch-the-fixture-uapi.patch\n")
+        B.run(["git", "-C", repo, "add", "patches/manager/series"])
         B.run(["git", "-C", repo, "commit", "-qm", "Change test source identity"])
         actual = B.run(["git", "-C", repo, "rev-parse", "HEAD"])
         with mock.patch.dict(os.environ, {"CI_SOURCE_SHA": actual}):
@@ -270,13 +330,15 @@ class BootstrapTests(unittest.TestCase):
         lock = work / "source/Cargo.lock"
         original = lock.read_bytes()
         mode = lock.stat().st_mode
-        for mutation, restore in (
-                (lambda: lock.write_text("replacement dependencies\n"), lambda: lock.write_bytes(original)),
-                (lambda: lock.chmod(mode | 0o100), lambda: lock.chmod(mode)),
-                (lambda: (work / "source/new.rs").write_text("new source\n"),
-                 lambda: (work / "source/new.rs").unlink()),
-                (lambda: (work / "source/uapi-link").unlink(),
-                 lambda: (work / "source/uapi-link").symlink_to("uapi.h"))):
+        mutations = [
+            (lambda: lock.write_text("replacement dependencies\n"), lambda: lock.write_bytes(original)),
+            (lambda: (work / "source/new.rs").write_text("new source\n"),
+             lambda: (work / "source/new.rs").unlink()),
+            (lambda: (work / "source/uapi-link").unlink(),
+             lambda: (work / "source/uapi-link").symlink_to("uapi.h"))]
+        if os.name == "posix":  # Windows has no executable bit to flip
+            mutations.append((lambda: lock.chmod(mode | 0o100), lambda: lock.chmod(mode)))
+        for mutation, restore in mutations:
             with self.subTest(mutation=mutation):
                 mutation()
                 with self.assertRaisesRegex(ValueError, "changed since workspace assembly"):
@@ -289,7 +351,7 @@ class BootstrapTests(unittest.TestCase):
         self.native_git_count = 1
         with self.assertRaisesRegex(ValueError, "original full upstream Git history"):
             B.verify_native(work, target, dist)
-        self.native_git_count = 3715
+        self.native_git_count = B.MANAGER_GIT_COUNT
         (work / "ndk/tool").write_text("modified tool\n")
         with self.assertRaisesRegex(ValueError, "Pinned NDK checkout changed"):
             B.verify_native(work, target, dist)
@@ -312,7 +374,7 @@ class BootstrapTests(unittest.TestCase):
         _, work, target, dist = self.native_workspace()
         output = target / "aarch64-linux-android/release/build/ksud-fixture/output"
         original = output.read_text()
-        output.write_text(original.replace("VERSION_CODE=40900", "VERSION_CODE=0"))
+        output.write_text(original.replace(f"VERSION_CODE={B.LAYOUT['identity']['manager_version_code']}", "VERSION_CODE=0"))
         with self.assertRaisesRegex(ValueError, "original Manager version identity"):
             B.verify_native(work, target, dist)
         output.write_text(original)
@@ -342,19 +404,19 @@ class BootstrapTests(unittest.TestCase):
     def test_absent_historical_tag_restores_the_real_graph_without_changing_history(self):
         source, first, head = self.manager_history()
         result = B.manager_tag_info(source, restore_missing=True)
-        self.assertEqual(result, {"name": "v4.2.0", "commit": first, "distance": 1, "restored": True})
-        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "refs/tags/v4.2.0^{commit}"]), first)
+        self.assertEqual(result, {"name": B.MANAGER_TAG, "commit": first, "distance": 1, "restored": True})
+        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "refs/tags/" + B.MANAGER_TAG + "^{commit}"]), first)
         self.assertEqual(B.run(["git", "-C", source, "rev-parse", "HEAD"]), head)
         self.assertEqual(B.run(["git", "-C", source, "rev-list", "--count", "HEAD"]), "2")
-        self.assertTrue(B.run(["git", "-C", source, "describe", "--tags", "--always"]).startswith("v4.2.0-1-g"))
+        self.assertTrue(B.run(["git", "-C", source, "describe", "--tags", "--always"]).startswith(B.MANAGER_TAG + "-1-g"))
         self.assertFalse(B.manager_tag_info(source)["restored"])
 
     def test_wrong_existing_historical_tag_is_never_overwritten(self):
         source, _, head = self.manager_history()
-        B.run(["git", "-C", source, "tag", "v4.2.0", head])
+        B.run(["git", "-C", source, "tag", B.MANAGER_TAG, head])
         with self.assertRaisesRegex(ValueError, "points to a different commit"):
             B.manager_tag_info(source, restore_missing=True)
-        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "refs/tags/v4.2.0^{commit}"]), head)
+        self.assertEqual(B.run(["git", "-C", source, "rev-parse", "refs/tags/" + B.MANAGER_TAG + "^{commit}"]), head)
 
     def test_historical_tag_with_missing_commit_or_nonancestor_stops(self):
         source, _, head = self.manager_history()
@@ -368,24 +430,58 @@ class BootstrapTests(unittest.TestCase):
         with mock.patch.object(B, "MANAGER_TAG_SHA", unrelated):
             with self.assertRaisesRegex(ValueError, "not an ancestor"):
                 B.manager_tag_info(source, restore_missing=True)
-        self.assertEqual(B.run(["git", "-C", source, "tag", "--list", "v4.2.0"]), "")
+        self.assertEqual(B.run(["git", "-C", source, "tag", "--list", B.MANAGER_TAG]), "")
 
     def test_historical_tag_wrong_distance_or_history_count_stops(self):
         source, _, _ = self.manager_history(count=3)
         with self.assertRaisesRegex(ValueError, "exactly one commit behind"):
             B.manager_tag_info(source, restore_missing=True)
-        with mock.patch.object(B, "MANAGER_GIT_COUNT", 3715):
+        with mock.patch.object(B, "MANAGER_GIT_COUNT", B.MANAGER_GIT_COUNT + 1):
             with self.assertRaisesRegex(ValueError, "original full upstream Git history"):
                 B.manager_tag_info(source, restore_missing=True)
-        self.assertEqual(B.run(["git", "-C", source, "tag", "--list", "v4.2.0"]), "")
+        self.assertEqual(B.run(["git", "-C", source, "tag", "--list", B.MANAGER_TAG]), "")
 
     def test_missing_historical_tag_is_not_restored_after_preparation(self):
         _, work, target, dist = self.native_workspace()
-        B.run(["git", "-C", work / "source", "tag", "-d", "v4.2.0"])
+        B.run(["git", "-C", work / "source", "tag", "-d", B.MANAGER_TAG])
         with self.assertRaisesRegex(ValueError, "tag missing from the build checkout"):
             B.verify_native(work, target, dist)
-        self.assertEqual(B.run(["git", "-C", work / "source", "tag", "--list", "v4.2.0"]), "")
+        self.assertEqual(B.run(["git", "-C", work / "source", "tag", "--list", B.MANAGER_TAG]), "")
         self.assertFalse(dist.exists())
+
+
+    def test_archives_export_pinned_trees_and_compare_with_legacy_input(self):
+        git = self.root / "git-source"
+        B.run(["git", "init", "-q", git])
+        pins = {}
+        names = {"driver": "builtin_archive", "susfs": "susfs_archive", "manager": "manager_archive"}
+        identity = {}
+        for name, key in names.items():
+            (git / "component").write_bytes(name.encode())
+            B.run(["git", "-C", git, "add", "component"])
+            B.run(["git", "-C", git, "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
+                   "commit", "-qm", name])
+            pin = B.run(["git", "-C", git, "rev-parse", "HEAD"])
+            pins[name] = {"url": str(git), "commit": pin}
+            identity[key] = name + "-" + pin[:8] + ".tar.gz"
+        with mock.patch.object(B, "UPSTREAMS", pins), mock.patch.object(B, "git_cache", return_value=git):
+            B.archive_upstreams(self.root, self.root / "cache", None, identity)
+        for name, key in names.items():
+            B.extract_single_tree(self.root / "upstream/archives" / identity[key], self.root / name)
+            self.assertEqual((self.root / name / "component").read_bytes(), name.encode())
+
+        lock = json.loads((ROOT / "reference/inputs.lock.json").read_bytes())
+        old, = [self.root / path for path in lock["files"] if path.startswith("downloads/builtin-")]
+        old.parent.mkdir()
+        shutil.copy2(self.archive([("old/component", "file", "driver")]), old)
+        B.verify_driver_archive(self.root, self.root / "driver")
+        (self.root / "driver/component").write_bytes(b"changed")
+        with self.assertRaisesRegex(ValueError, "component"):
+            B.verify_driver_archive(self.root, self.root / "driver")
+        (self.root / "driver/component").unlink()
+        (self.root / "driver/component").symlink_to("different-target")
+        with self.assertRaisesRegex(ValueError, "component"):
+            B.verify_driver_archive(self.root, self.root / "driver")
 
 
 if __name__ == "__main__":

@@ -59,6 +59,11 @@ Windows 查看/编辑源码、CI 状态和 agent 下载的完整命令见
 
 ## 构建输入
 
+驱动与 Manager 共有的 ioctl 数值、命令结构体大小和成员偏移必须在 host 与 arm64 上一致。
+仅一侧声明的接口会列入 `reports/uapi/complete-uapi-alignment.json`，不导致构建失败。
+下载后可查看 `kernel-build-info.json` 的 `uapi.manager_only_ioctl_constants`，了解哪些
+Manager 命令未在该驱动头文件中声明。空列表表示该版本没有这类命令。
+
 上游与工具固定在 `configs/manifest.locked.xml` 等文件。原厂参考 ELF、boot、
 公开证书和固定源码归档保存在 `inputs-v1` Release，由
 `reference/inputs.lock.json` 的 SHA 锁定；CI 不重复下载整包 ROM。

@@ -337,6 +337,22 @@ class SourceTests(unittest.TestCase):
         self.assertIn("https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/" + "b" * 40 + "/kernel/missing.c", calls)
         self.assertIn("https://gitlab.com/simonpunk/susfs4ksu/-/raw/" + "d" * 40 + "/kernel_patches/fs/susfs.c", calls)
 
+    def test_fetch_reads_a_backup_after_the_upstream_lost_the_file(self):
+        self.fetch_patch.stop()
+        layout = json.loads((self.root / "ci-layout.json").read_bytes())
+        layout["upstreams"]["driver"]["backup_urls"] = ["https://github.com/backup/SukiSU-Ultra.git"]
+        lf(self.root / "ci-layout.json", json.dumps(layout))
+        calls = []
+        def transport(request, timeout):
+            calls.append(request.full_url)
+            if "/backup/" not in request.full_url:
+                raise HTTPError(request.full_url, 404, "missing", {}, None)
+            return io.BytesIO(b"backup copy")
+        with patch.object(S, "urlopen", transport):
+            self.assertEqual(S.fetch("driver", "kernel/ksu.c"), b"backup copy")
+        self.assertEqual(calls, [f"https://raw.githubusercontent.com/{owner}/SukiSU-Ultra/{'b' * 40}/kernel/ksu.c"
+                                 for owner in ("SukiSU-Ultra", "backup")])
+
 
 class ReleaseCollectionTests(unittest.TestCase):
     def setUp(self):

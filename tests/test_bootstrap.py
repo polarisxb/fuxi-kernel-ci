@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check bootstrap trust boundaries using temporary archives and real local Git."""
 import importlib.util
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext, redirect_stdout
 import io
 import json
 import os
@@ -173,6 +173,72 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual((dest / "file").read_text(), "baseline\n")
         self.assertEqual((mirror / "file").read_text(), "uncommitted mirror change\n")
         self.assertEqual(B.run(["git", "-C", dest, "rev-parse", "HEAD"]), revision)
+
+    def git_repo(self, name, commits=1):
+        repo = self.root / name
+        B.run(["git", "init", "-q", repo])
+        B.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"])
+        B.run(["git", "-C", repo, "config", "user.name", "test"])
+        shas = []
+        for number in range(commits):
+            (repo / "file").write_bytes(f"{name} {number}\n".encode())
+            B.run(["git", "-C", repo, "add", "file"])
+            B.run(["git", "-C", repo, "commit", "-qm", f"{name} {number}"])
+            shas.append(B.run(["git", "-C", repo, "rev-parse", "HEAD"]))
+        return repo, shas
+
+    def bare_cache(self, name, origin):
+        target = self.root / "caches" / name
+        B.run(["git", "init", "-q", "--bare", target])
+        B.run(["git", "-C", target, "remote", "add", "origin", origin])
+        return target
+
+    def pinned_backup(self):
+        """Like the fork: a stale branch, and the pinned commit kept alive only by a tag."""
+        backup, shas = self.git_repo("backup", commits=3)
+        B.run(["git", "-C", backup, "tag", "fuxi-pin/head", shas[-1]])
+        B.run(["git", "-C", backup, "reset", "-q", "--hard", shas[0]])
+        return backup, shas[-1]
+
+    def test_backup_supplies_the_pinned_commit_without_its_tags(self):
+        backup, revision = self.pinned_backup()
+        other, _ = self.git_repo("rewritten")
+        for origin in (self.root / "deleted", other):
+            for full_history in (False, True):
+                with self.subTest(origin=origin.name, full_history=full_history):
+                    target = self.bare_cache(f"{origin.name}-{full_history}", origin)
+                    log = io.StringIO()
+                    with redirect_stdout(log):
+                        used = B.fetch_pinned(target, "upstream", revision, full_history, [str(backup)])
+                    self.assertEqual(used, str(backup))
+                    self.assertIn("::warning::upstream", log.getvalue())
+                    self.assertTrue(B.has_commit(target, revision))
+                    self.assertEqual(B.run(["git", "-C", target, "tag", "--list"]), "")
+                    count = B.run(["git", "-C", target, "rev-list", "--count", revision])
+                    self.assertEqual(count, "3" if full_history else "1")
+
+    def test_upstream_comes_first_and_every_failure_is_reported(self):
+        upstream, shas = self.git_repo("upstream")
+        target = self.bare_cache("upstream", upstream)
+        self.assertEqual(B.fetch_pinned(target, "upstream", shas[-1], False, [str(self.root / "unused")]),
+                         "upstream")
+        target = self.bare_cache("nowhere", self.root / "deleted")
+        with redirect_stdout(io.StringIO()), self.assertRaisesRegex(
+                RuntimeError, "No source provides .*upstream failed.*also-deleted failed"):
+            B.fetch_pinned(target, "upstream", shas[-1], True, [str(self.root / "also-deleted")])
+
+    def test_git_cache_uses_backups_only_without_a_local_mirror(self):
+        backup, revision = self.pinned_backup()
+        mirror, _ = self.git_repo("mirror")
+        with mock.patch.object(B, "cache_lock", lambda cache, name: nullcontext()), \
+                redirect_stdout(io.StringIO()):
+            cache = B.git_cache("https://example.com/deleted", revision, self.root / "cache",
+                                full_history=True, backups=[str(backup)])
+            self.assertEqual(B.run(["git", "-C", cache, "rev-parse", "refs/heads/pinned"]), revision)
+            self.assertEqual(B.run(["git", "-C", cache, "tag", "--list"]), "")
+            with self.assertRaisesRegex(RuntimeError, "No source provides"):
+                B.git_cache("https://example.com/other", revision, self.root / "cache",
+                            mirror=mirror, backups=[str(backup)])
 
     def native_workspace(self):
         """Keep Git trust checks real; stub only external compiler/ELF tools."""

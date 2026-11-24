@@ -73,19 +73,21 @@ def logical_path(value):
 
 
 def raw_urls(name, path):
-    """Pinned raw-file URLs for one upstream; only known hosts are contacted."""
+    """Pinned raw-file URLs for one upstream, then its backups; only known hosts are contacted."""
     info = layout()["upstreams"][name]
     sha, encoded = info["commit"], quote(path, safe="/")
     if name == "common":
         return [(f"https://raw.githubusercontent.com/aosp-mirror/kernel_common/{sha}/{encoded}", False),
                 (f"https://android.googlesource.com/kernel/common/+/{sha}/{encoded}?format=TEXT", True)]
-    match = re.fullmatch(r"https://(github\.com|gitlab\.com)/([\w.-]+)/([\w.-]+?)(?:\.git)?", info["url"])
-    if not match:
-        raise ValueError(f"No raw file endpoint for {info['url']}")
-    host, owner, repo = match.groups()
-    if host == "github.com":
-        return [(f"https://raw.githubusercontent.com/{owner}/{repo}/{sha}/{encoded}", False)]
-    return [(f"https://gitlab.com/{owner}/{repo}/-/raw/{sha}/{encoded}", False)]
+    urls = []
+    for url in (info["url"], *info.get("backup_urls", ())):
+        match = re.fullmatch(r"https://(github\.com|gitlab\.com)/([\w.-]+)/([\w.-]+?)(?:\.git)?", url)
+        if not match:
+            raise ValueError(f"No raw file endpoint for {url}")
+        host, owner, repo = match.groups()
+        urls.append((f"https://raw.githubusercontent.com/{owner}/{repo}/{sha}/{encoded}" if host == "github.com"
+                     else f"https://gitlab.com/{owner}/{repo}/-/raw/{sha}/{encoded}", False))
+    return urls
 
 
 def fetch(name, path):

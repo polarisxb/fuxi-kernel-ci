@@ -1,5 +1,5 @@
 Subject: ksud: ask Zygisk Next for its injection state
-Upstream-Status: Pending [SukiSU-Ultra main]
+Upstream-Status: Pending [SukiSU-Nova main]
 Drop-when: upstream detects Zygisk Next without relying on its process name
 
 Zygisk Next can hide its daemon's process name, so the process scan

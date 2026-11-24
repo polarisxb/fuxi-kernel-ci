@@ -1,8 +1,10 @@
 """Check that this repository keeps pins and patch queues instead of upstream copies."""
 import importlib.util
+import json
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import unittest
 from xml.etree import ElementTree as ET
 
@@ -59,6 +61,18 @@ class RepositoryLayoutTests(unittest.TestCase):
                 if literals.search(line):
                     violations.append(f"{name}:{n}")
         self.assertEqual(violations, [])
+
+    def test_backup_urls_are_distinct_https_alternatives(self):
+        layout = json.loads((ROOT / "ci-layout.json").read_bytes())
+        driver = layout["upstreams"]["driver"]
+        self.assertTrue(driver["backup_urls"])
+        for bad in (["http://example.com/backup.git"], [driver["url"]], ["https://example.com/b.git"] * 2,
+                    "https://example.com/b.git"):
+            with self.subTest(bad=bad), tempfile.TemporaryDirectory() as temp:
+                driver["backup_urls"] = bad
+                (Path(temp) / "ci-layout.json").write_text(json.dumps(layout), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "backup_urls"):
+                    Q.load_layout(temp)
 
     def test_every_queue_is_complete_documented_and_windows_safe(self):
         layout = Q.load_layout(ROOT)

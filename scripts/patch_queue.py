@@ -34,6 +34,11 @@ def load_layout(root):
     for name in ("common", "susfs", "driver", "manager", "ndk"):
         commit = upstreams.get(name, {}).get("commit", "")
         require(re.fullmatch(r"[0-9a-f]{40}", commit), f"ci-layout.json must pin {name} to a full commit")
+        backups = upstreams[name].get("backup_urls", [])
+        require(isinstance(backups, list) and len(set(backups)) == len(backups)
+                and all(isinstance(url, str) and url.startswith("https://") and url != upstreams[name].get("url")
+                        for url in backups),
+                f"ci-layout.json {name} backup_urls must be distinct HTTPS URLs other than its url")
     require(set(layout.get("patch_queues", {})) == set(QUEUES), "ci-layout.json patch_queues is incomplete")
     return layout
 

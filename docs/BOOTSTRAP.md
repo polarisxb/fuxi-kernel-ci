@@ -15,6 +15,15 @@ bash scripts/build-ksud.sh --workspace "$RUNNER_TEMP/fuxi-native" --dist dist/na
 `susfs4ksu/`），CI 默认从固定的公开 URL 获取。`--native-only` 仅准备固定 904c60d1
 Manager 原生程序源码和 NDK，保留真实 Git 历史及 40900 版本计数。
 
+`ci-layout.json` 的上游可以声明 `backup_urls`。只有固定 URL 拉取失败、或拉到的内容
+里没有固定 commit 时，才依次改从备份按 commit 拉取，并在 Actions 日志留下警告。
+备份只取这个 commit（Manager 取它的完整历史），不取备份仓库的 tag 和分支，所以
+备份里保活用的 `fuxi-pin/*` tag 不会进入 checkout，`git describe` 不受影响。拿到的
+commit 照样按完整 SHA、历史计数和 describe 校验，来源不同不改变构建结果。使用
+`--mirror-root` 时不访问备份。SukiSU 驱动和 Manager 的备份是 `polarisxb/SukiSU-Ultra`
+（上游改名为 SukiSU-Nova 之前建的 fork），三个固定 commit 由其中的 `fuxi-pin/*`
+tag 保留；不要同步它的旧分支。
+
 原生构建要求开发仓库已有 commit 且工作区干净；`CI_SOURCE_SHA` 必须等于
 当前真实 HEAD。组装时记录开发源码与实际 Manager 树中的文件哈希、执行位和
 链接，Cargo 运行前再次记录并在编译后逐项比较。上游保持 904c60d1、完整历史

@@ -61,7 +61,9 @@ class ExportTests(unittest.TestCase):
         identity = dict(E.IDENTITY, actual_kernel_version=E.IDENTITY["kernel_version"],
                         manager_uapi_sha256={"supercall.h": digest(headers / "supercall.h")})
         (self.release / "configs/build-identity.json").write_bytes(json.dumps(identity).encode())
-        (self.release / "reports").mkdir()
+        (self.release / "reports/uapi").mkdir(parents=True)
+        (self.release / "reports/uapi/complete-uapi-alignment.json").write_bytes(
+            b'{"manager_only_ioctl_constants":["KSU_IOCTL_MANAGER_TEST"]}\n')
         self.refresh_source_attestation()
         real_spec = importlib.util.spec_from_file_location(
             "export_file_safety", ROOT / "workspace/scripts/verify-delivery.py")
@@ -101,6 +103,8 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(set(path.name for path in dist.iterdir()),
                          {E.KERNEL_ZIP, E.MODULE_ZIP, "kernel-build-info.json", "SHA256SUMS"})
         self.assertEqual(result["source_sha"], "a" * 40)
+        metadata = json.loads((dist / "kernel-build-info.json").read_bytes())
+        self.assertEqual(metadata["uapi"]["manager_only_ioctl_constants"], ["KSU_IOCTL_MANAGER_TEST"])
         with zipfile.ZipFile(dist / E.MODULE_ZIP) as archive:
             self.assertEqual(archive.read("service.sh"), (self.module / "service.sh").read_bytes())
             zip_mode = (archive.getinfo("service.sh").external_attr >> 16) & 0o777

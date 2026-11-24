@@ -1,4 +1,4 @@
-"""Freeze the public names used before the version-lock migration."""
+"""Freeze the public release names; renaming a release must change this test too."""
 import importlib.util
 import json
 from pathlib import Path
@@ -18,12 +18,12 @@ class IdentityTests(unittest.TestCase):
     def setUp(self):
         self.layout = json.loads((ROOT / "ci-layout.json").read_bytes())
 
-    def test_original_public_names(self):
+    def test_locked_public_names(self):
         expected = {
-            "kernel_zip": "Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r2_AnyKernel3.zip",
+            "kernel_zip": "Fuxi_5.15.194_SukiSU_40900_SUSFS_2.3.0_r3_AnyKernel3.zip",
             "module_zip": "SUSFS_R28_Fuxi230_40900_local2.zip",
             "native_zip": "Fuxi_SukiSU_40900_Zygisk_StatusFix.zip",
-            "kernel_string": "Fuxi GKI 5.15.194 - SukiSU 40900 + SUSFS 2.3.0 r2",
+            "kernel_string": "Fuxi GKI 5.15.194 - SukiSU 40900 + SUSFS 2.3.0 r3",
             "builtin_archive": "builtin-e2912817.tar.gz",
             "susfs_archive": "susfs-bca0d233.tar.gz",
             "manager_archive": "manager-904c60d1.tar.gz",
@@ -35,7 +35,7 @@ class IdentityTests(unittest.TestCase):
 
     def test_kernel_release_must_match_its_inputs(self):
         original = self.layout["kernel_release"]
-        for part in ("40900", "230", "r2", "f4321180a397"):
+        for part in ("40900", "230", "r3", "f4321180a397"):
             with self.subTest(part=part), self.assertRaisesRegex(ValueError, "kernel_release"):
                 self.layout["kernel_release"] = original.replace(part, "wrong")
                 identity.derive(self.layout)

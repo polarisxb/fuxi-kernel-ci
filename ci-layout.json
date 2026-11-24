@@ -46,9 +46,9 @@
     "driver": "patches/driver",
     "manager": "patches/manager"
   },
-  "kernel_release": "5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r2",
+  "kernel_release": "5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r3",
   "identity": {
-    "release_suffix": "r2",
+    "release_suffix": "r3",
     "driver_version": 40900,
     "driver_version_full": "v4.2.0-builtin-e2912817-susfs-local",
     "manager_version_code": 40900,

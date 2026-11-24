@@ -4,9 +4,10 @@
 ZIP 打包。公开 Release 提供固定版本的下载 URL、源码提交号和 SHA256，agent
 可以匿名下载并验证产物。
 
-当前基线：5.15.194 / SukiSU 40900 / SUSFS 2.3.0，保留 Full LTO、CFI、BTF、
-严格 KMI 与模块签名保护。当前 r2 基线曾在 fuxi 的 OS3.0.309.0.WMCCNXM 上通过
-启动、Root、屏幕/触摸及模块验证；新 CI 提交的编译通过不替代其独立实机验收。
+当前基线：5.15.194 / SukiSU 40900 / SUSFS 2.3.0 r3，保留 Full LTO、CFI、BTF、
+严格 KMI 与模块签名保护。r3 在 r2 的基础上让 CPU 伪装不再改写 udelay 校准和
+HWCAP。r2 曾在 fuxi 的 OS3.0.309.0.WMCCNXM 上通过启动、Root、屏幕/触摸及模块
+验证；新 CI 提交（包括 r3）的编译通过不替代其独立实机验收。
 
 ## 源码布局
 

@@ -3,7 +3,8 @@
 本候选从 2026-11-10 保存的 r1 基线修复已审查缺陷，内核后缀为
 `suki{driver_version}-susfs{susfs_compact}-{release_suffix}`。原 r1 成品与只读基线保留，{release_suffix} 不覆盖其发布目录。
 重点修复重定向对象生命周期、RCU 查找、查询分配失败、规则键匹配及
-readlink 长度/释放处理。对应的 SUSFS 模块 {module_local} 单独打包，修复 WebUI
+readlink 长度/释放处理。CPU 伪装只改上报的 MIDR，不再改写 udelay 校准
+（loops_per_jiffy）和 HWCAP；BogoMIPS 与 HWCAP 参数必须为 0。对应的 SUSFS 模块 {module_local} 单独打包，修复 WebUI
 回调、日志开关和 uname 保存；它不包含在内核 AnyKernel ZIP 中。
 
 这是新编译的 {kernel_version} 内核，使用官方 builtin {manager_tag} 源码

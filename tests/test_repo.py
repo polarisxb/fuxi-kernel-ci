@@ -56,8 +56,6 @@ class RepositoryLayoutTests(unittest.TestCase):
             if not name or name.startswith("module/") or name in {"tests/test_identity.py", "tests/test_patch_queue.py"}:
                 continue
             for n, line in enumerate((ROOT / name).read_text(encoding="utf-8").splitlines(), start=1):
-                # Phase 2 owns the snapshot of the old Manager headers and permission filenames.
-                line = re.sub(r"configs/manager\d+-(uapi|ioctl-permissions)", "configs/manager-snapshot", line)
                 if literals.search(line):
                     violations.append(f"{name}:{n}")
         self.assertEqual(violations, [])

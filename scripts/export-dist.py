@@ -116,15 +116,12 @@ def verify_ci_source(workspace, release_root, source_sha):
         "type": "file", "sha256": sha256(identity_path),
         "executable": bool(identity_path.stat().st_mode & stat.S_IXUSR)},
         "Build identity is not bound to the successful compilation")
-    source_files = source.get("source_files", {})
-    prefix = "module/"
-    expected_module = {name[len(prefix):]: digest for name, digest in source_files.items()
-                       if name.startswith(prefix)}
+    expected_module = source.get("module_files")
     module = workspace / "module"
     current_module = {path.relative_to(module).as_posix(): sha256(path)
                       for path in module.rglob("*") if path.is_file() and not path.is_symlink()}
     require(expected_module and expected_module == current_module,
-            "Module sources differ from the source inputs recorded before compilation")
+            "Module sources differ from the tree bootstrap assembled before compilation")
     return source
 
 

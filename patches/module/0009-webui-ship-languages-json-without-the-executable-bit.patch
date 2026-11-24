@@ -1,0 +1,10 @@
+Subject: webui: ship languages.json without the executable bit
+Upstream-Status: Inappropriate [only upstream's Git tree marks it 100755; its R28 release ZIP has no executable bits]
+Drop-when: upstream commits webroot/languages/languages.json as 100644
+
+Keeps every file of the package at the mode it had when it was
+reviewed and tested from the R28 release.
+---
+diff --git a/webroot/languages/languages.json b/webroot/languages/languages.json
+old mode 100755
+new mode 100644

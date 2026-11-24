@@ -296,7 +296,7 @@ def ci_source_info():
     if requested or os.environ.get("GITHUB_ACTIONS") == "true":
         require(actual is not None and not dirty, "CI repository inputs must be a clean Git checkout")
     files = {str(path.relative_to(REPO)).replace(os.sep, "/"): sha256(path)
-             for name in ("patches", "module") for path in sorted((REPO / name).rglob("*"))
+             for name in ("patches",) for path in sorted((REPO / name).rglob("*"))
              if path.is_file() and not path.is_symlink()}
     return {"source_sha": actual, "source_ref": os.environ.get("CI_SOURCE_REF", os.environ.get("GITHUB_REF", "local")),
             "source_files": files, "dirty": dirty, "local_validation_only": actual is None or dirty}
@@ -349,6 +349,24 @@ def build_susfs_tool(workspace):
     record = {"sha256": sha256(tool), "bytes": tool.stat().st_size, "ndk_commit": NDK_SHA}
     print(f"Built ksu_susfs from SUSFS {UPSTREAMS['susfs']['commit'][:12]}: {record}, needs {needed}", flush=True)
     return record
+
+
+def assemble_module(workspace, cache, mirror_root=None):
+    """Assemble the packaged SUSFS module: the pinned upstream module plus patches/module."""
+    info = UPSTREAMS["module"]
+    mirror = mirror_root / "susfs4ksu-module" if mirror_root else None
+    cached = git_cache(info["url"], info["commit"], cache, mirror=mirror, backups=info.get("backup_urls", ()))
+    module = workspace / "module/susfs4ksu"
+    with tempfile.TemporaryDirectory(dir=workspace) as temporary:
+        source = Path(temporary) / "module"
+        checkout(cached, info["commit"], source)
+        Q.assemble_module(source, module, info)
+    queue = Q.apply_series(module, Q.queue_directory(REPO, LAYOUT, "module"))
+    files = {path.relative_to(module.parent).as_posix(): sha256(path)
+             for path in sorted(module.rglob("*")) if path.is_file() and not path.is_symlink()}
+    print(f"Assembled the SUSFS module from {info['release']} with {len(queue)} patches ({len(files)} files)",
+          flush=True)
+    return queue, files
 
 
 def archive_upstreams(workspace, cache, mirror_root, identity):
@@ -447,15 +465,16 @@ def prepare_kernel(workspace, cache, mirror_root=None):
     extract_single_tree(builtin_archive, kernel / "KernelSU")
     verify_driver_archive(workspace, kernel / "KernelSU")
     queues["driver"] = Q.apply_series(kernel / "KernelSU", Q.queue_directory(REPO, LAYOUT, "driver"))
+    queues["module"], module_files = assemble_module(workspace, cache, mirror_root)
     links = json.loads((REPO / "configs/source-links.json").read_text())["kernel_links"]
     restore_links(workspace, links)
     for source, target in ((REPO / "configs", workspace / "configs"),
                            (REPO / "workspace/scripts", workspace / "scripts"),
-                           (REPO / "workspace/tests", workspace / "tests"),
-                           (REPO / "module", workspace / "module")):
+                           (REPO / "workspace/tests", workspace / "tests")):
         copy_overlay(source, target)
     write_workspace_identity(workspace, projects, susfs_tool)
-    (workspace / "configs/ci-source.json").write_text(json.dumps(ci_source_info(), indent=2) + "\n")
+    source_record = dict(ci_source_info(), module_files=module_files)
+    (workspace / "configs/ci-source.json").write_text(json.dumps(source_record, indent=2) + "\n")
     (workspace / "reports").mkdir()
     capture_patches(workspace, builtin_archive)
     return {"kind": "kernel", "projects": [{k: v for k, v in p.items() if k != "links"}

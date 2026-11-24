@@ -1,0 +1,22 @@
+Subject: module.prop: identify the Fuxi local package
+Upstream-Status: Inappropriate [local version]
+Drop-when: never; change it together with identity.module_local in ci-layout.json
+
+The version keeps upstream's R28 and adds the SUSFS and local revision;
+LOCAL-CHANGES.md explains the versionCode rule.
+---
+diff --git a/module.prop b/module.prop
+index 59e1ca1ed3d9b1037d3a627ccbd60e72b621deee..8bb7dfbb1d68f7211be0118abeae49da267a1b3a 100644
+--- a/module.prop
++++ b/module.prop
+@@ -1,7 +1,7 @@
+ id=susfs4ksu
+-name=SUSFS-FOR-KERNELSU
+-version=v1.5.2-R28
+-versionCode=105002028
++name=SUSFS-FOR-KERNELSU (Fuxi 2.3.0 local)
++version=v1.5.2-R28-fuxi230-local3
++versionCode=105002030
+ author=sidex15 & simonpunk
+ description=An addon root hiding service for KernelSU compiled with patched kernel source.
+ banner=banner.png

@@ -1,0 +1,22 @@
+Subject: utils: quote the uname values passed to set_uname
+Upstream-Status: Pending [sidex15/susfs4ksu-module]
+Drop-when: upstream quotes kernel_version, kernel_build and the helper path
+
+Unquoted, an empty value broke the test and a value with spaces was
+split into several arguments.
+---
+diff --git a/utils.sh b/utils.sh
+index ee73c9092376f1393d62bfaea313353404d55087..fc43a6d4c96f8b10a1b37af10012afc3fd7e45e3 100644
+--- a/utils.sh
++++ b/utils.sh
+@@ -62,7 +62,7 @@ contains_reset_prop() {
+ }
+ 
+ spoof_uname() {
+-	[ -z $kernel_version ] && kernel_version='default'
+-	[ -z $kernel_build ] && kernel_build='default'
+-	${SUSFS_BIN} set_uname "$kernel_version" "$kernel_build"
++	[ -z "$kernel_version" ] && kernel_version='default'
++	[ -z "$kernel_build" ] && kernel_build='default'
++	"${SUSFS_BIN}" set_uname "$kernel_version" "$kernel_build"
+ }

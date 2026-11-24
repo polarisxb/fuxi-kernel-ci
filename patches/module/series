@@ -1,0 +1,11 @@
+# Applied in order to the pinned upstream module (upstreams.module in ci-layout.json)
+# after its exclude and crlf_to_lf rules. Edit with scripts/source.py.
+0001-installer-install-only-the-pinned-helper.patch
+0002-module-prop-drop-updatejson.patch
+0003-config-keep-sus-su-disabled.patch
+0004-service-apply-the-configured-log-state.patch
+0005-utils-quote-the-uname-values.patch
+0006-webui-release-callbacks-report-failures-and-save-uname-safely.patch
+0007-module-prop-identify-the-fuxi-local-package.patch
+0008-ship-the-local-change-notes.patch
+0009-webui-ship-languages-json-without-the-executable-bit.patch

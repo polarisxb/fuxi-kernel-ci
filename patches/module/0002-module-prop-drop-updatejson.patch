@@ -1,0 +1,19 @@
+Subject: module.prop: drop updateJson
+Upstream-Status: Inappropriate [a local package must not be replaced by upstream releases]
+Drop-when: this package is replaced by an unmodified upstream release
+
+With updateJson the Manager offers upstream's latest release as an
+update, which would silently replace this reviewed local package.
+---
+diff --git a/module.prop b/module.prop
+index 38966328c155ea2759b8c458759a185c4ba0ec3e..59e1ca1ed3d9b1037d3a627ccbd60e72b621deee 100644
+--- a/module.prop
++++ b/module.prop
+@@ -4,7 +4,6 @@ version=v1.5.2-R28
+ versionCode=105002028
+ author=sidex15 & simonpunk
+ description=An addon root hiding service for KernelSU compiled with patched kernel source.
+-updateJson=https://raw.githubusercontent.com/sidex15/ksu_module_susfs/v1.5.2+/update.json
+ banner=banner.png
+ webuiIcon=susfsicon.png
+ actionIcon=susfsicon.png

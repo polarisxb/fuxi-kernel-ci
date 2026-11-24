@@ -1,5 +1,9 @@
 // Host-only tests of the actual shipped WebUI functions and logging fragment.
 // Override SUSFS_MODULE_ROOT to run these assertions against the preserved version.
+// The default root is the module bootstrap.py assembles (pinned upstream + patches/module).
+// The WebUI functions are cut out of the minified bundle by their minified names (A, Y, q,
+// e, ...). A new upstream release renames the bundle and these identifiers, so the anchors
+// below must be rewritten together with patches/module/0006 when the module is upgraded.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');

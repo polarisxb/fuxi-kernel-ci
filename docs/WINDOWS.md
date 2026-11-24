@@ -14,11 +14,10 @@ git config core.autocrlf false
 仓库不存上游源码，只存三样东西：
 
 - `ci-layout.json` 的 `upstreams`：kernel/common、SUSFS、SukiSU builtin 驱动、
-  SukiSU Manager 与 NDK 的固定 commit，是所有版本的唯一来源。
-- `patches/common`、`patches/driver`、`patches/manager`：本项目自己的改动，
+  SukiSU Manager、NDK 与 sidex15 SUSFS 模块的固定 commit，是所有版本的唯一来源。
+- `patches/common`、`patches/driver`、`patches/manager`、`patches/module`：本项目自己的改动，
   每个目录一个按顺序应用的补丁队列（`series`）。每个补丁头写明原因
   （`Subject:`）、上游状态（`Upstream-Status:`）和何时可以删除（`Drop-when:`）。
-- `module/susfs4ksu/`：SUSFS local3 模块源码（phase 3B 再改为补丁队列）。
 
 CI 每次按"上游 → 官方 SUSFS 补丁 → 补丁队列"现场组装完整源码。上游更新时
 只需要改 pin，再看哪个补丁打不上；不需要重新导入整棵源码树。
@@ -32,10 +31,13 @@ python scripts/source.py read common/fs/namei.c
 python scripts/source.py read common/fs/namei.c --upstream
 python scripts/source.py read driver/kernel/feature/sucompat.c
 python scripts/source.py read manager/userspace/ksud/src/module.rs
+python scripts/source.py read module/customize.sh
 ```
 
 `common/drivers/kernelsu/...` 会映射到驱动源码，`KernelSU`、`SukiSU` 仍可作为
-`driver`、`manager` 的别名使用。
+`driver`、`manager` 的别名使用。`module/...` 读的是 CI 组装出的模块：上游文件先按
+`upstreams.module` 的 `exclude` 去掉、按 `crlf_to_lf` 转成 LF，再应用 `patches/module`。
+`tools/ksu_susfs_arm64` 不在里面，它由 CI 编译后在打包时加入。
 
 ## 修改源码
 
@@ -65,7 +67,7 @@ python scripts/source.py refresh
 按仓库的 `AGENTS.md` 写决策说明，保存文本为 UTF-8/LF，再提交：
 
 ```powershell
-git add ci-layout.json patches module configs workspace scripts tests .github docs
+git add ci-layout.json patches configs workspace scripts tests .github docs
 git commit --file decision-message.txt
 git push origin main
 ```

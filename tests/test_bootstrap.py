@@ -55,6 +55,50 @@ class BootstrapTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "kernel version"):
             B.write_workspace_identity(self.root, projects, tool)
 
+    def test_module_is_assembled_from_its_pin_and_queue(self):
+        repo = self.root / "repo"
+        queue = repo / "patches/module"
+        queue.mkdir(parents=True)
+        (queue / "series").write_bytes(b"0001-quiet-the-log.patch\n")
+        (queue / "0001-quiet-the-log.patch").write_bytes(
+            b"Subject: Quiet the log\nUpstream-Status: Inappropriate [test fixture]\nDrop-when: never\n\n"
+            b"Fixture.\n---\ndiff --git a/service.sh b/service.sh\n--- a/service.sh\n+++ b/service.sh\n"
+            b"@@ -1 +1 @@\n-log=1\n+log=0\n")
+        pinned = self.root / "pinned-module"
+        for name, data in {"service.sh": b"log=1\n", "README.md": b"readme\n",
+                           "sepolicy.rule": b"allow a b dir {search}\r\n"}.items():
+            (pinned / name).parent.mkdir(parents=True, exist_ok=True)
+            (pinned / name).write_bytes(data)
+        info = {"url": "https://example.invalid/module.git", "commit": "f" * 40, "release": "R0",
+                "backup_urls": ["https://example.invalid/backup.git"],
+                "exclude": ["README.md"], "crlf_to_lf": ["sepolicy.rule"]}
+        calls = []
+
+        def git_cache(url, revision, cache, mirror=None, backups=()):
+            calls.append((url, revision, mirror, tuple(backups)))
+            return self.root / "cache/module"
+
+        def checkout(cache_repo, revision, destination, sparse=None):
+            calls.append((cache_repo, revision, sparse))
+            shutil.copytree(pinned, destination)
+
+        workspace = self.root / "work"
+        workspace.mkdir()
+        with mock.patch.object(B, "REPO", repo), mock.patch.dict(B.UPSTREAMS, {"module": info}), \
+                mock.patch.object(B, "git_cache", git_cache), mock.patch.object(B, "checkout", checkout), \
+                redirect_stdout(io.StringIO()):
+            records, files = B.assemble_module(workspace, self.root / "cache")
+        self.assertEqual(calls, [(info["url"], info["commit"], None, tuple(info["backup_urls"])),
+                                 (self.root / "cache/module", info["commit"], None)])
+        module = workspace / "module/susfs4ksu"
+        self.assertEqual((module / "service.sh").read_bytes(), b"log=0\n")
+        self.assertEqual((module / "sepolicy.rule").read_bytes(), b"allow a b dir {search}\n")
+        self.assertFalse((module / "README.md").exists())
+        self.assertEqual([record["name"] for record in records], ["0001-quiet-the-log.patch"])
+        self.assertEqual(files, {"susfs4ksu/" + name: hashlib.sha256((module / name).read_bytes()).hexdigest()
+                                 for name in ("sepolicy.rule", "service.sh")})
+        self.assertEqual(sorted(path.name for path in workspace.iterdir()), ["module"])
+
     def fake_susfs_tool_build(self, machine=183, needed=("libc.so", "libdl.so")):
         """A pinned SUSFS checkout plus a stand-in for ndk-build and llvm-readelf."""
         jni = self.root / "upstream/susfs4ksu/ksu_susfs/jni"
@@ -293,8 +337,6 @@ class BootstrapTests(unittest.TestCase):
             b"Drop-when: never\n\nApply the manager queue to the pinned checkout.\n---\n"
             b"diff --git a/uapi.h b/uapi.h\n--- a/uapi.h\n+++ b/uapi.h\n"
             b"@@ -1 +1 @@\n-original UAPI\n+patched UAPI\n")
-        (repo / "module").mkdir()
-        (repo / "module/module.prop").write_text("version=local2\n")
         (repo / "reference").mkdir()
         for name in ("manager-arm64-uapi.json", "arm64-uapi-probe.rs.in"):
             shutil.copy2(ROOT / "reference" / name, repo / "reference" / name)

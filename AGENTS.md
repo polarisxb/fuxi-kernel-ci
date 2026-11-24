@@ -20,9 +20,10 @@ GitHub Actions. Do not require a local Ubuntu setup for reading or editing code.
   drop the patch once upstream has it.
 - The Manager CI build keeps the original Git history so versionCode 40900 is real,
   not fabricated.
-- `module/` contains the matching SUSFS local3 module source. Its `ksu_susfs` helper is
-  compiled by CI from the pinned SUSFS commit and added when packaging; never commit
-  a prebuilt helper.
+- The SUSFS module is also a pinned upstream (`upstreams.module`, sidex15 R28) plus
+  `patches/module`; CI assembles it and packages it as local3. Its `ksu_susfs` helper
+  is compiled by CI from the pinned SUSFS commit and added when packaging; never
+  commit a prebuilt helper or a copy of the module.
 - `configs/`, `ci-layout.json` and `reference/inputs.lock.json` lock compatibility,
   source revisions, tools and public verification inputs. Change locks explicitly.
 - Linux symlinks are recorded in `configs/source-links.json` and recreated in CI.

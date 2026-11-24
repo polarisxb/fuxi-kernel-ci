@@ -1,5 +1,5 @@
 Subject: sucompat: match the SUSFS hook contract
-Upstream-Status: Pending [SukiSU-Ultra builtin]
+Upstream-Status: Pending [SukiSU-Nova builtin]
 Drop-when: upstream shares one declaration of these hooks with the SUSFS patch
 
 Include include/linux/sukisu_hooks.h so these definitions are checked

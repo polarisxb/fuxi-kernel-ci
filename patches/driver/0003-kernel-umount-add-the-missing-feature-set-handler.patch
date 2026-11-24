@@ -1,5 +1,5 @@
 Subject: kernel_umount: add the missing feature set handler
-Upstream-Status: Pending [SukiSU-Ultra builtin]
+Upstream-Status: Pending [SukiSU-Nova builtin]
 Drop-when: upstream builtin defines kernel_umount_feature_set()
 
 kernel_umount_handler refers to kernel_umount_feature_set(), which

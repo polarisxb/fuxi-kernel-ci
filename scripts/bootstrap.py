@@ -142,7 +142,45 @@ def manifest_projects(path):
     return projects
 
 
-def git_cache(url, revision, cache, full_history=False, mirror=None):
+def has_commit(repo, revision):
+    try:
+        return run(["git", "-C", repo, "rev-parse", "--verify", "--quiet", revision + "^{commit}"]) == revision
+    except RuntimeError:
+        return False
+
+
+def fetch_pinned(target, origin, revision, full_history, backups=()):
+    """Fetch revision into a bare cache from its origin remote, then from each backup URL.
+
+    A backup is asked for the commit alone, without its tags or branches: the tags
+    that keep the commit alive there must never reach a checkout, where git
+    describe would report them instead of the upstream tag. Returns the source used.
+    """
+    failures = []
+    for index, source in enumerate((origin, *backups)):
+        if failures:
+            print(f"::warning::{failures[-1]}; fetching {revision[:12]} from backup {source}", flush=True)
+        try:
+            if index:
+                run(["git", "-C", target, "fetch", "--no-tags", *([] if full_history else ["--depth=1"]),
+                     source, revision])
+            elif full_history:
+                run(["git", "-C", target, "fetch", "--tags", "origin",
+                     "+refs/heads/*:refs/remotes/origin/*"])
+                if run(["git", "-C", target, "rev-parse", "--is-shallow-repository"]) == "true":
+                    run(["git", "-C", target, "fetch", "--unshallow", "origin"])
+            else:
+                run(["git", "-C", target, "fetch", "--depth=1", "origin", revision])
+        except RuntimeError as error:
+            failures.append(f"{source} failed: " + " ".join(str(error).split())[-300:])
+            continue
+        if has_commit(target, revision):
+            return source
+        failures.append(f"{source} does not have {revision[:12]}")
+    raise RuntimeError(f"No source provides {revision}: " + "; ".join(failures))
+
+
+def git_cache(url, revision, cache, full_history=False, mirror=None, backups=()):
     name = hashlib.sha256((url + "\0" + revision + str(full_history)).encode()).hexdigest()
     target = cache / "git" / name
     with cache_lock(cache, name):
@@ -154,20 +192,11 @@ def git_cache(url, revision, cache, full_history=False, mirror=None):
                 run(["git", "-C", target, "remote", "add", "origin", mirror.resolve()])
             else:
                 run(["git", "-C", target, "remote", "add", "origin", url])
-        try:
-            resolved = run(["git", "-C", target, "rev-parse", revision + "^{commit}"])
-        except RuntimeError:
-            resolved = ""
-        if resolved != revision:
+        if not has_commit(target, revision):
             print(f"Fetch {url} at {revision[:12]}", flush=True)
-            if full_history:
-                run(["git", "-C", target, "fetch", "--tags", "origin",
-                     "+refs/heads/*:refs/remotes/origin/*"])
-                if run(["git", "-C", target, "rev-parse", "--is-shallow-repository"]) == "true":
-                    run(["git", "-C", target, "fetch", "--unshallow", "origin"])
-            else:
-                args = ["git", "-C", target, "fetch", "--depth=1"]
-                run([*args, "origin", revision])
+            # A local validation mirror stands in for the network, backups included.
+            fetch_pinned(target, str(mirror.resolve()) if mirror is not None else url, revision,
+                         full_history, () if mirror is not None else backups)
         require(run(["git", "-C", target, "rev-parse", revision + "^{commit}"]) == revision,
                 f"Wrong cached Git revision: {url}")
         run(["git", "-C", target, "update-ref", "refs/heads/pinned", revision])
@@ -306,7 +335,8 @@ def archive_upstreams(workspace, cache, mirror_root, identity):
         upstream = UPSTREAMS[name]
         revision = upstream["commit"]
         mirror = mirror_root / mirror_name if mirror_root else None
-        cached = git_cache(upstream["url"], revision, cache, mirror=mirror)
+        cached = git_cache(upstream["url"], revision, cache, mirror=mirror,
+                           backups=upstream.get("backup_urls", ()))
         run(["git", "-C", cached, "archive", "--format=tar.gz", f"--prefix={name}-{revision}/",
              "--output", directory / identity[archive_key], revision])
         caches[name] = cached
@@ -438,7 +468,8 @@ def prepare_native(workspace, cache, mirror_root=None):
     require(not ci_source["local_validation_only"],
             "Native builds require a clean committed development checkout")
     manager_mirror = mirror_root / "KernelSU" if mirror_root else None
-    source_cache = git_cache(MANAGER_URL, MANAGER_SHA, cache, full_history=True, mirror=manager_mirror)
+    source_cache = git_cache(MANAGER_URL, MANAGER_SHA, cache, full_history=True, mirror=manager_mirror,
+                             backups=UPSTREAMS["manager"].get("backup_urls", ()))
     source = workspace / "source"
     checkout(source_cache, MANAGER_SHA, source)
     historical_tag = manager_tag_info(source, restore_missing=True)

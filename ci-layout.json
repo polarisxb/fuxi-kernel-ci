@@ -20,12 +20,14 @@
       }
     },
     "driver": {
-      "url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git",
+      "url": "https://github.com/SukiSU-Nova/SukiSU-Nova.git",
+      "backup_urls": ["https://github.com/polarisxb/SukiSU-Ultra.git"],
       "branch": "builtin",
       "commit": "e2912817f4e1b194e582a06e0b5eacf6a3fb7083"
     },
     "manager": {
-      "url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git",
+      "url": "https://github.com/SukiSU-Nova/SukiSU-Nova.git",
+      "backup_urls": ["https://github.com/polarisxb/SukiSU-Ultra.git"],
       "branch": "main",
       "commit": "904c60d18f026340ce38ca2d5a1da529aadcba1a",
       "tag": "v4.2.0",

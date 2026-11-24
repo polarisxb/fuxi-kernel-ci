@@ -362,6 +362,11 @@ def assemble_module(workspace, cache, mirror_root=None):
         checkout(cached, info["commit"], source)
         Q.assemble_module(source, module, info)
     queue = Q.apply_series(module, Q.queue_directory(REPO, LAYOUT, "module"))
+    # git apply rewrites patched files under the caller's umask (ci-build.sh runs bootstrap
+    # with umask 077 while the signing key exists), but the ZIP ships the modes Git records.
+    for path in module.rglob("*"):
+        if path.is_file() and not path.is_symlink():
+            path.chmod(0o755 if path.stat().st_mode & 0o100 else 0o644)
     files = {path.relative_to(module.parent).as_posix(): sha256(path)
              for path in sorted(module.rglob("*")) if path.is_file() and not path.is_symlink()}
     print(f"Assembled the SUSFS module from {info['release']} with {len(queue)} patches ({len(files)} files)",

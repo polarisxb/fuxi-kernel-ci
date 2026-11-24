@@ -66,9 +66,10 @@ class BootstrapTests(unittest.TestCase):
             b"@@ -1 +1 @@\n-log=1\n+log=0\n")
         pinned = self.root / "pinned-module"
         for name, data in {"service.sh": b"log=1\n", "README.md": b"readme\n",
-                           "sepolicy.rule": b"allow a b dir {search}\r\n"}.items():
+                           "sepolicy.rule": b"allow a b dir {search}\r\n", "tools/run.sh": b"#!/bin/sh\n"}.items():
             (pinned / name).parent.mkdir(parents=True, exist_ok=True)
             (pinned / name).write_bytes(data)
+        (pinned / "tools/run.sh").chmod(0o755)
         info = {"url": "https://example.invalid/module.git", "commit": "f" * 40, "release": "R0",
                 "backup_urls": ["https://example.invalid/backup.git"],
                 "exclude": ["README.md"], "crlf_to_lf": ["sepolicy.rule"]}
@@ -84,10 +85,15 @@ class BootstrapTests(unittest.TestCase):
 
         workspace = self.root / "work"
         workspace.mkdir()
-        with mock.patch.object(B, "REPO", repo), mock.patch.dict(B.UPSTREAMS, {"module": info}), \
-                mock.patch.object(B, "git_cache", git_cache), mock.patch.object(B, "checkout", checkout), \
-                redirect_stdout(io.StringIO()):
-            records, files = B.assemble_module(workspace, self.root / "cache")
+        # ci-build.sh runs bootstrap with umask 077, under which git apply rewrites files as 0600.
+        umask = os.umask(0o077)
+        try:
+            with mock.patch.object(B, "REPO", repo), mock.patch.dict(B.UPSTREAMS, {"module": info}), \
+                    mock.patch.object(B, "git_cache", git_cache), mock.patch.object(B, "checkout", checkout), \
+                    redirect_stdout(io.StringIO()):
+                records, files = B.assemble_module(workspace, self.root / "cache")
+        finally:
+            os.umask(umask)
         self.assertEqual(calls, [(info["url"], info["commit"], None, tuple(info["backup_urls"])),
                                  (self.root / "cache/module", info["commit"], None)])
         module = workspace / "module/susfs4ksu"
@@ -96,8 +102,12 @@ class BootstrapTests(unittest.TestCase):
         self.assertFalse((module / "README.md").exists())
         self.assertEqual([record["name"] for record in records], ["0001-quiet-the-log.patch"])
         self.assertEqual(files, {"susfs4ksu/" + name: hashlib.sha256((module / name).read_bytes()).hexdigest()
-                                 for name in ("sepolicy.rule", "service.sh")})
+                                 for name in ("sepolicy.rule", "service.sh", "tools/run.sh")})
         self.assertEqual(sorted(path.name for path in workspace.iterdir()), ["module"])
+        if os.name == "posix":
+            modes = {name: (module / name).stat().st_mode & 0o777
+                     for name in ("sepolicy.rule", "service.sh", "tools/run.sh")}
+            self.assertEqual(modes, {"sepolicy.rule": 0o644, "service.sh": 0o644, "tools/run.sh": 0o755})
 
     def fake_susfs_tool_build(self, machine=183, needed=("libc.so", "libdl.so")):
         """A pinned SUSFS checkout plus a stand-in for ndk-build and llvm-readelf."""

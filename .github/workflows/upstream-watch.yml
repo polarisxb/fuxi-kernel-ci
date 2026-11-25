@@ -1,0 +1,47 @@
+{
+  "name": "Watch upstream revisions",
+  "on": {
+    "schedule": [{"cron": "17 4 * * 1"}],
+    "workflow_dispatch": {}
+  },
+  "permissions": {
+    "contents": "write",
+    "pull-requests": "write",
+    "actions": "write"
+  },
+  "concurrency": {
+    "group": "upstream-watch",
+    "cancel-in-progress": false
+  },
+  "jobs": {
+    "watch": {
+      "if": "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 40,
+      "steps": [
+        {
+          "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          "with": {"persist-credentials": false}
+        },
+        {
+          "name": "Check public upstreams",
+          "run": "mkdir -p \"$RUNNER_TEMP/watch\" && python3 -B scripts/upstream_watch.py --write \"$RUNNER_TEMP/watch/reports\" > \"$RUNNER_TEMP/watch/updates.json\""
+        },
+        {
+          "name": "Prepare and verify changed pins",
+          "id": "prepare",
+          "run": "python3 -B scripts/upstream_watch_pr.py prepare \"$RUNNER_TEMP/watch\""
+        },
+        {
+          "name": "Publish the draft and dispatch its build",
+          "if": "steps.prepare.outputs.day != ''",
+          "env": {
+            "GH_TOKEN": "${{ github.token }}",
+            "REPORT_DAY": "${{ steps.prepare.outputs.day }}"
+          },
+          "run": "python3 -B scripts/upstream_watch_pr.py publish \"$REPORT_DAY\""
+        }
+      ]
+    }
+  }
+}

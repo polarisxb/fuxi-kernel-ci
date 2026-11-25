@@ -56,6 +56,10 @@ def snapshot(root, expected_commit=None):
         directory, = directories
         path = directory / (folder + "-build-info.json")
         info = json.loads(path.read_bytes())
+        # Before the signing split all runs used the release certificate.
+        signing = info.get("signing", "release")
+        require(signing in ("release", "ephemeral"), f"Unknown signing mode in {path}")
+        snapshot[f"{folder}/signing"] = signing
         require(directory.name in (folder, prefix + info["source_sha"]), f"Artifact directory/commit mismatch: {path}")
         components.append((info["repository"], info["source_sha"], info["run_id"]))
         require(info["component"] == {"kernel": "kernel", "native": "ksud"}[folder], f"Wrong component in {path}")
@@ -118,6 +122,7 @@ def snapshot(root, expected_commit=None):
         if folder == "kernel":
             require(images == [info["image_sha256"]], f"Kernel ZIP Image differs from {path}")
     repository, commit, run_id = components[0]
+    require(snapshot["kernel/signing"] == snapshot["native/signing"], f"Mixed signing modes in {root}")
     require(components[0] == components[1], f"Mixed component origins in {root}")
     require(re.fullmatch(r"[0-9a-f]{40}", commit), f"Invalid source SHA in {root}")
     if expected_commit:

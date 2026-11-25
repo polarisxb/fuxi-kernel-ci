@@ -133,6 +133,14 @@ class ExportTests(unittest.TestCase):
             expected, name = line.split("  ", 1)
             self.assertEqual(digest(dist / name), expected)
 
+    def test_export_labels_the_kernel_and_records_the_verified_certificate(self):
+        cert = self.release / "public-certificates/signing_key.x509"
+        for mode in ("release", "ephemeral"):
+            with self.subTest(mode=mode), patch.dict(os.environ, FUXI_SIGNING_MODE=mode):
+                metadata = E.export(self.work, self.root / mode, self.reports)
+                self.assertEqual(metadata["signing"], mode)
+                self.assertEqual(metadata["public_certificate_sha256"], digest(cert))
+
     def test_module_source_must_not_carry_its_own_helper(self):
         (self.module / "tools").mkdir()
         (self.module / "tools/ksu_susfs_arm64").write_bytes(b"prebuilt helper")

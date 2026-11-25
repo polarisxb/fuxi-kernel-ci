@@ -16,8 +16,10 @@ def sha(data):
 
 
 def fixture(root, commit, *, image=b"kernel image", source=b"common", module=b"module",
-            lib=b"native executable", native_tree=None, native_extra=None):
+            lib=b"native executable", native_tree=None, native_extra=None, signing=None):
     origin = {"repository": "fixture/repo", "source_sha": commit, "run_id": commit[:4]}
+    if signing is not None:
+        origin["signing"] = signing
     kernel = dict(origin, component="kernel", driver_version=1, manager_version=1,
                   susfs_version="v1", kernel_release="fixture", image_sha256=sha(image),
                   public_certificate_sha256=sha(b"cert"), source_identity={
@@ -74,6 +76,14 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["differences"], {})
         self.assertEqual(json.loads(result.stdout)["not_reproducible"], {})
+
+    def test_compare_old_release_metadata_with_explicit_modes(self):
+        fixture(self.new, "b" * 40, signing="release")
+        self.assertEqual(self.compare().returncode, 0)
+        fixture(self.new, "b" * 40, signing="ephemeral")
+        result = self.compare()
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertEqual(set(json.loads(result.stdout)["differences"]), {"kernel/signing", "native/signing"})
 
     def test_reordered_native_library_from_identical_inputs_is_reported_not_failed(self):
         fixture(self.new, "b" * 40, lib=b"native executable, constants reordered")

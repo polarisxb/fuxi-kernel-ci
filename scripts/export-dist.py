@@ -126,6 +126,8 @@ def verify_ci_source(workspace, release_root, source_sha):
 
 
 def export(workspace, dist, reports):
+    signing = os.environ.get("FUXI_SIGNING_MODE", "ephemeral")
+    require(signing in ("release", "ephemeral"), "Unknown kernel signing mode")
     workspace = workspace.resolve()
     reports = reports.resolve()
     require(not dist.exists(), "Refusing to overwrite an existing dist directory")
@@ -170,6 +172,7 @@ def export(workspace, dist, reports):
         metadata = {
             "schema_version": 1,
             "component": "kernel",
+            "signing": signing,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "source_sha": source_sha,
             "source_identity": source_identity,

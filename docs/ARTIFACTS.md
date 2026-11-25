@@ -43,4 +43,14 @@ Release 才是长期、无需登录的 agent 入口。输入 Release `inputs-v1`
 
 CI 验收证明源码、工具链、保护配置与产物绑定；它不替代每次修改后的实机
 启动、Root、模块与硬件验证。安装前仍需核对设备、系统和当前活动槽并备份。
-签名私钥只通过 Actions Secret 注入，不能放进源码、公共输入、缓存或 ZIP。
+
+## 签名模式
+
+`kernel-build-info.json` 和 `native-build-info.json` 的 `signing` 记录本次构建的发布资格。
+`main` 的 push 运行 `kernel-release`，校验固定的公开证书。分支 push 以及所有手动运行均运行
+`kernel-check`，在 runner 临时目录中生成一次性证书，核对实际编入内核的证书并验证模块签名。
+`ephemeral` 产物仅供检查，请勿刷机。发布任务要求两个组件均标记为 `release`。
+
+切换工作流前，由所有者创建 `release-signing` 环境，部署分支只允许 `main`，在环境中配置与基线证书
+配对的 `KERNEL_SIGNING_KEY_PEM`。确认环境配置正确后再移除仓库级同名 secret；应与工作流合并协调操作，
+以免仍使用旧配置的 main 构建取不到密钥。私钥只留在环境 secret 和 runner 临时文件中。

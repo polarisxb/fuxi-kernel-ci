@@ -41,12 +41,23 @@
     "ndk": {
       "url": "https://android.googlesource.com/toolchain/prebuilts/ndk/r23",
       "commit": "93532f3052c14fbb337ff57d5732128dc7481ee6"
+    },
+    "module": {
+      "url": "https://github.com/sidex15/susfs4ksu-module.git",
+      "branch": "v1.5.2+",
+      "commit": "d30974d4d6356cba1c322f8826b5fd7df904a4b9",
+      "release": "v1.5.2+_R28",
+      "exclude": [".github", ".gitignore", "LICENSE", "README.md", "tools/ksu_susfs_arm64", "tools/sus_su_arm64"],
+      "crlf_to_lf": ["CHANGELOG.md", "sepolicy.rule", "update.json", "webroot/config.json",
+                     "webroot/contributors.json", "webroot/languages/en.xml",
+                     "webroot/languages/languages.json", "webroot/translators.json"]
     }
   },
   "patch_queues": {
     "common": "patches/common",
     "driver": "patches/driver",
-    "manager": "patches/manager"
+    "manager": "patches/manager",
+    "module": "patches/module"
   },
   "kernel_release": "5.15.194-android13-8-gf4321180a397-suki40900-susfs230-r3",
   "identity": {

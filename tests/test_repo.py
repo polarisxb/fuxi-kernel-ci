@@ -31,15 +31,13 @@ class RepositoryLayoutTests(unittest.TestCase):
         makefile = patch.read_text(encoding="utf-8")
         for name, key in (("KSU_VERSION", "driver_version"), ("KSU_VERSION_FULL", "driver_version_full")):
             self.assertEqual(re.findall(rf"^\+{name} := (\S+)$", makefile, re.M), [str(identity[key])])
-        module = ROOT / "module/susfs4ksu"
-        installer = (module / "customize.sh").read_text(encoding="utf-8")
+        module = "".join(path.read_text(encoding="utf-8") for path in Q.read_series(ROOT / "patches/module"))
         for var, key in (("ksuver", "driver_version"), ("SUSFS_VERSION_RAW", "susfs_version")):
-            self.assertEqual(re.findall(rf'^\[ "\${var}" = "([^"]+)" \]', installer, re.M),
+            self.assertEqual(re.findall(rf'^\+\[ "\${var}" = "([^"]+)" \]', module, re.M),
                              [str(identity[key])])
-        props = dict(line.split("=", 1) for line in (module / "module.prop").read_text(encoding="utf-8").splitlines()
-                     if "=" in line)
+        version, = re.findall(r"^\+version=(\S+)$", module, re.M)
         for field in ("module_release", "module_local"):
-            self.assertIn(identity[field], props["version"].split("-"))
+            self.assertIn(identity[field], version.split("-"))
 
     def test_scripts_use_locked_versions(self):
         identity = I.from_repository()
@@ -53,7 +51,7 @@ class RepositoryLayoutTests(unittest.TestCase):
         violations = []
         for name in files.decode().split("\0"):
             # These two independent golden fixtures preserve historical output and SCM formatting.
-            if not name or name.startswith("module/") or name in {"tests/test_identity.py", "tests/test_patch_queue.py"}:
+            if not name or name in {"tests/test_identity.py", "tests/test_patch_queue.py"}:
                 continue
             for n, line in enumerate((ROOT / name).read_text(encoding="utf-8").splitlines(), start=1):
                 if literals.search(line):
@@ -96,8 +94,9 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertIn("-g" + upstreams["common"]["commit"][:12], release)
 
     def test_upstream_trees_are_not_vendored(self):
-        self.assertFalse((ROOT / "src").exists(),
-                         "Upstream sources come from ci-layout.json pins; edit patches/ with scripts/source.py")
+        for name in ("src", "module"):
+            self.assertFalse((ROOT / name).exists(),
+                             "Upstream sources come from ci-layout.json pins; edit patches/ with scripts/source.py")
 
 
 if __name__ == "__main__":

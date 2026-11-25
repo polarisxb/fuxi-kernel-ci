@@ -13,10 +13,11 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
+import stat
 import subprocess
 
 
-QUEUES = ("common", "driver", "manager")
+QUEUES = ("common", "driver", "manager", "module")
 SERIES = "series"
 PATCH_NAME = re.compile(r"^[0-9]{4}-[a-z0-9][a-z0-9.-]*\.patch$")
 REQUIRED_HEADERS = ("Subject:", "Upstream-Status:", "Drop-when:")
@@ -31,7 +32,7 @@ def require(condition, message):
 def load_layout(root):
     layout = json.loads((Path(root) / "ci-layout.json").read_text(encoding="utf-8"))
     upstreams = layout.get("upstreams", {})
-    for name in ("common", "susfs", "driver", "manager", "ndk"):
+    for name in ("common", "susfs", "driver", "manager", "ndk", "module"):
         commit = upstreams.get(name, {}).get("commit", "")
         require(re.fullmatch(r"[0-9a-f]{40}", commit), f"ci-layout.json must pin {name} to a full commit")
         backups = upstreams[name].get("backup_urls", [])
@@ -130,6 +131,49 @@ def apply_series(root, directory, include=None, upto=None):
             continue
         git_apply(root, data, path.name, include=sorted(selected) if selected is not None else None)
     return records
+
+
+def module_excluded(path, info):
+    """Whether a pinned module path is left out of the package (repository files, prebuilt helpers)."""
+    parts = PurePosixPath(path).parts
+    return any(parts[:len(rule)] == rule for rule in (PurePosixPath(item).parts for item in info["exclude"]))
+
+
+def crlf_to_lf(data, name):
+    """Convert a file whose every line ends in CRLF; any other layout means upstream changed it."""
+    lines = data.replace(b"\r\n", b"")
+    require(b"\r\n" in data and b"\r" not in lines and b"\n" not in lines,
+            f"{name} no longer ends every line in CRLF; review crlf_to_lf in ci-layout.json")
+    return data.replace(b"\r\n", b"\n")
+
+
+def assemble_module(checkout, destination, info):
+    """Copy the pinned module tree minus its excluded paths, converting the listed CRLF files."""
+    checkout, destination = Path(checkout), Path(destination)
+    require(not destination.exists() and not destination.is_symlink(),
+            f"Module destination already exists: {destination}")
+    normalize = set(info["crlf_to_lf"])
+    copied, used_rules = [], set()
+    for path in sorted(checkout.rglob("*")):
+        relative = path.relative_to(checkout).as_posix()
+        if PurePosixPath(relative).parts[0] == ".git" or path.is_dir() and not path.is_symlink():
+            continue
+        if module_excluded(relative, info):
+            used_rules.update(rule for rule in info["exclude"] if module_excluded(relative, {"exclude": [rule]}))
+            continue
+        require(path.is_file() and not path.is_symlink(), f"Unexpected module node: {relative}")
+        data = path.read_bytes()
+        if relative in normalize:
+            data = crlf_to_lf(data, relative)
+        target = destination / safe_relative(relative)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        target.chmod(0o755 if path.stat().st_mode & stat.S_IXUSR else 0o644)
+        copied.append(relative)
+    require(normalize <= set(copied), f"crlf_to_lf names missing files: {sorted(normalize - set(copied))}")
+    require(used_rules == set(info["exclude"]),
+            f"Module exclude rules match nothing: {sorted(set(info['exclude']) - used_rules)}")
+    return copied
 
 
 def install_susfs(common, susfs_root, info):

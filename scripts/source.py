@@ -36,7 +36,7 @@ Q = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(Q)
 
 ALIASES = {"common": "common", "driver": "driver", "kernelsu": "driver",
-           "manager": "manager", "sukisu": "manager"}
+           "manager": "manager", "sukisu": "manager", "module": "module"}
 NEW_HEADER = ("Subject: {subject}\nUpstream-Status: Pending\n"
               "Drop-when: TODO: the upstream change that makes this patch unnecessary\n\n"
               "TODO: why this change is needed.\n")
@@ -55,7 +55,7 @@ def logical_path(value):
         raise ValueError("Use a relative component/path without parent traversal")
     queue = ALIASES.get(parts[0].lower())
     if queue is None:
-        raise ValueError("Component must be common, driver (KernelSU) or manager (SukiSU)")
+        raise ValueError("Component must be common, driver (KernelSU), manager (SukiSU) or module (SUSFS module)")
     path = "/".join(parts[1:])
     if queue == "common" and (path == "drivers/kernelsu" or path.startswith("drivers/kernelsu/")):
         queue, path = "driver", "kernel" + path[len("drivers/kernelsu"):]
@@ -141,6 +141,13 @@ def build_view(queue, paths, folder, upto=None, upstream=False):
     git(folder, "init", "-q")
     for path in paths:
         data = fetch(queue, path)
+        if data is not None and queue == "module" and not upstream:
+            # The same rules bootstrap.py applies before the module queue.
+            info = layout()["upstreams"]["module"]
+            if Q.module_excluded(path, info):
+                data = None
+            elif path in info["crlf_to_lf"]:
+                data = Q.crlf_to_lf(data, path)
         if data is not None:
             (folder / path).parent.mkdir(parents=True, exist_ok=True)
             (folder / path).write_bytes(data)

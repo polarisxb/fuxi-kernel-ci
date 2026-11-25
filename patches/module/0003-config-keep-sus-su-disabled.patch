@@ -1,0 +1,20 @@
+Subject: config: keep the deprecated sus_su disabled
+Upstream-Status: Inappropriate [upstream still defaults sus_su to 2 for SUSFS 1.x kernels]
+Drop-when: upstream defaults sus_su to -1 on SUSFS 2.x
+
+SUSFS 2.x removed sus_su and this package does not ship it; -1 keeps
+service.sh and the WebUI from trying to enable it.
+---
+diff --git a/config.sh b/config.sh
+index 9f83c3cbb0376887faaeaef05543f5e3c5c22251..0a0b9670eba3a40fb2626ed472694e69e81db391 100644
+--- a/config.sh
++++ b/config.sh
+@@ -1,6 +1,6 @@
+ susfs_log=1
+-sus_su=2
+-sus_su_active=2
++sus_su=-1
++sus_su_active=-1
+ hide_cusrom=0
+ hide_vendor_sepolicy=0
+ hide_compat_matrix=0

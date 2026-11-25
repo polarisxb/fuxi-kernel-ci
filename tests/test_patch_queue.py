@@ -123,6 +123,39 @@ class PatchQueueTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "replace an upstream"):
             Q.install_susfs(self.tree, susfs, info)
 
+    def module_checkout(self):
+        checkout = self.root / "module-checkout"
+        files = {".git/HEAD": b"ref\n", ".github/workflows/build.yml": b"ci\n", "README.md": b"readme\n",
+                 "tools/ksu_susfs_arm64": b"\x7fELF prebuilt", "tools/keep.txt": b"kept\n",
+                 "sepolicy.rule": b"allow a b dir {search}\r\nallow c d dir {search}",
+                 "webroot/index.html": b"<html>\r\n<body>\n</html>\r\n", "service.sh": b"#!/system/bin/sh\n"}
+        for name, data in files.items():
+            (checkout / name).parent.mkdir(parents=True, exist_ok=True)
+            (checkout / name).write_bytes(data)
+        info = {"exclude": [".github", "README.md", "tools/ksu_susfs_arm64"], "crlf_to_lf": ["sepolicy.rule"]}
+        return checkout, info
+
+    def test_module_tree_drops_excluded_paths_and_converts_listed_crlf_files(self):
+        checkout, info = self.module_checkout()
+        destination = self.root / "module"
+        copied = Q.assemble_module(checkout, destination, info)
+        self.assertEqual(copied, ["sepolicy.rule", "service.sh", "tools/keep.txt", "webroot/index.html"])
+        self.assertEqual((destination / "sepolicy.rule").read_bytes(), b"allow a b dir {search}\nallow c d dir {search}")
+        # Mixed endings are not listed, so the file is kept exactly as upstream has it.
+        self.assertEqual((destination / "webroot/index.html").read_bytes(), b"<html>\r\n<body>\n</html>\r\n")
+        self.assertFalse((destination / "README.md").exists() or (destination / ".github").exists())
+        with self.assertRaisesRegex(ValueError, "already exists"):
+            Q.assemble_module(checkout, destination, info)
+
+    def test_module_rules_must_still_describe_the_pinned_tree(self):
+        checkout, info = self.module_checkout()
+        cases = [(dict(info, exclude=info["exclude"] + ["LICENSE"]), "match nothing"),
+                 (dict(info, crlf_to_lf=["sepolicy.rule", "missing.json"]), "missing files"),
+                 (dict(info, crlf_to_lf=["webroot/index.html"]), "no longer ends every line in CRLF")]
+        for number, (rules, message) in enumerate(cases):
+            with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                Q.assemble_module(checkout, self.root / f"module-{number}", rules)
+
     def test_scmversion_comes_from_the_locked_release(self):
         makefile = "VERSION = 5\nPATCHLEVEL = 15\nSUBLEVEL = 194\nEXTRAVERSION =\n"
         commit = "f4321180a3973d19b626b3eef51871199e4e1fac"

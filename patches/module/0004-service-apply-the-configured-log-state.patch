@@ -1,0 +1,29 @@
+Subject: service: apply the configured SUSFS kernel log state
+Upstream-Status: Pending [sidex15/susfs4ksu-module]
+Drop-when: upstream also applies enable_log 0
+
+Upstream only runs enable_log 1, so susfs_log=0 never turned the log
+off. Apply 0 or 1 explicitly; any other value falls back to the enabled
+default. Covered by workspace/tests/module/module.test.cjs.
+---
+diff --git a/service.sh b/service.sh
+index ddfd9402fc9126ffe676329a175049df159c2030..060204506767ec08177850b4402a3c871f90b11d 100644
+--- a/service.sh
++++ b/service.sh
+@@ -99,10 +99,12 @@ sus_su_2(){
+ 	sed -i "s/^sus_su=.*/sus_su=-1/" ${PERSISTENT_DIR}/config.sh
+ }
+ 
+-## Disable susfs kernel log ##
+-[ $susfs_log = 1 ] && {
+-	${SUSFS_BIN} enable_log 1
+-}
++## Apply susfs kernel log ##
++case "$susfs_log" in
++	0|1) ;;
++	*) susfs_log=1 ;;
++esac
++"${SUSFS_BIN}" enable_log "$susfs_log"
+ 
+ # SUSFS Logging
+ dmesg_snapshot=$(dmesg)

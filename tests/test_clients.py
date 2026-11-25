@@ -195,8 +195,11 @@ class SourceTests(unittest.TestCase):
                       "kernel_files": {"fs/susfs.c": "kernel_patches/fs/susfs.c"}},
             "driver": {"url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git", "commit": "b" * 40},
             "manager": {"url": "https://github.com/SukiSU-Ultra/SukiSU-Ultra.git", "commit": "c" * 40},
-            "ndk": {"commit": "e" * 40}},
-            "patch_queues": {"common": "patches/common", "driver": "patches/driver", "manager": "patches/manager"}}
+            "ndk": {"commit": "e" * 40},
+            "module": {"url": "https://github.com/sidex15/susfs4ksu-module.git", "commit": "f" * 40,
+                       "exclude": ["README.md", "tools/ksu_susfs_arm64"], "crlf_to_lf": ["sepolicy.rule"]}},
+            "patch_queues": {"common": "patches/common", "driver": "patches/driver", "manager": "patches/manager",
+                             "module": "patches/module"}}
         lf(self.root / "ci-layout.json", json.dumps(layout))
         lf(self.root / "configs/source-links.json", json.dumps({"manager_links": {
             "kernel/include/uapi": "../../uapi", "manager/app/src/main/cpp/uapi": "../../../../../uapi"}}))
@@ -207,8 +210,11 @@ class SourceTests(unittest.TestCase):
             ("susfs", "kernel_patches/fs/susfs.c"): b"susfs source\n",
             ("susfs", "kernel_patches/50.patch"): hunk("fs/namei.c", "upstream", "hooked").encode(),
             ("driver", "kernel/ksu.c"): b"driver\n",
+            ("module", "sepolicy.rule"): b"allow a b dir {search}\r\nallow c d dir {search}\r\n",
+            ("module", "service.sh"): b"#!/system/bin/sh\nlog=1\n",
+            ("module", "README.md"): b"upstream readme\n",
         }
-        for queue in ("driver", "manager"):
+        for queue in ("driver", "manager", "module"):
             lf(self.root / "patches" / queue / "series", "")
         self.common = self.root / "patches/common"
         lf(self.common / "0001-fix-namei.patch", queue_patch("fix namei", hunk("fs/namei.c", "hooked", "fixed")))
@@ -230,6 +236,22 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(S.read("common/fs/namei.c", upstream=True), b"upstream\n")
         with self.assertRaisesRegex(ValueError, "does not exist"):
             S.read("common/fs/missing.c")
+
+    def test_module_view_applies_the_bootstrap_rules_before_its_queue(self):
+        module = self.root / "patches/module"
+        lf(module / "0001-quiet-the-log.patch", queue_patch("quiet the log", hunk("service.sh", "log=1", "log=0",
+                                                                                 ["#!/system/bin/sh"])))
+        lf(module / "series", "0001-quiet-the-log.patch\n")
+        self.assertEqual(S.read("module/sepolicy.rule"), b"allow a b dir {search}\nallow c d dir {search}\n")
+        self.assertEqual(S.read("module/sepolicy.rule", upstream=True),
+                         b"allow a b dir {search}\r\nallow c d dir {search}\r\n")
+        self.assertEqual(S.read("module/service.sh"), b"#!/system/bin/sh\nlog=0\n")
+        with self.assertRaisesRegex(ValueError, "does not exist"):
+            S.read("module/README.md")
+        self.assertEqual(S.read("module/README.md", upstream=True), b"upstream readme\n")
+        self.upstream[("module", "sepolicy.rule")] = b"allow a b dir {search}\nallow c d dir {search}\r\n"
+        with self.assertRaisesRegex(ValueError, "crlf_to_lf"):
+            S.read("module/sepolicy.rule")
 
     def test_edit_then_refresh_without_changes_rewrites_the_same_bytes(self):
         S.edit("common", "0001")

@@ -96,7 +96,8 @@ class ExportTests(unittest.TestCase):
         path.write_text(json.dumps({
             "source_sha": "a" * 40,
             "local_validation_only": False,
-            "source_files": {"module/" + item.relative_to(self.work / "module").as_posix(): digest(item)
+            "source_files": {"patches/module/series": "0" * 64},
+            "module_files": {item.relative_to(self.work / "module").as_posix(): digest(item)
                              for item in (self.work / "module").rglob("*")
                              if item.is_file() and not item.is_symlink()},
         }))

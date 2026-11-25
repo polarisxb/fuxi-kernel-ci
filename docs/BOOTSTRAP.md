@@ -12,7 +12,7 @@ bash scripts/build-ksud.sh --workspace "$RUNNER_TEMP/fuxi-native" --dist dist/na
 
 `FUXI_INPUTS_CACHE` 或 `--inputs-cache` 控制公共缓存目录。工作区必须新建；脚本
 拒绝覆盖未知的非空目录。`--mirror-root` 只用于本机只读 Git 镜像的验收（SUSFS 镜像放在
-`susfs4ksu/`），CI 默认从固定的公开 URL 获取。`--native-only` 仅准备固定 904c60d1
+`susfs4ksu/`，SUSFS 模块镜像放在 `susfs4ksu-module/`），CI 默认从固定的公开 URL 获取。`--native-only` 仅准备固定 904c60d1
 Manager 原生程序源码和 NDK，保留真实 Git 历史及 40900 版本计数。
 
 `ci-layout.json` 的上游可以声明 `backup_urls`。只有固定 URL 拉取失败、或拉到的内容
@@ -67,7 +67,15 @@ tag 消失也拒绝。恢复记录随原生 metadata 发布，`build.rs` 的 Git
 4. `patches/common/series`：本仓库对内核的改动，按顺序严格应用（无 fuzz）。
 5. `kernel/KernelSU` 取自固定 driver 提交的 Git 归档。在应用 `patches/driver/series`
    前，逐项核对新树与旧输入包中的 builtin 树，包括内容、可执行位与符号链接目标。
-6. 原生构建：固定 Manager checkout 上应用 `patches/manager/series`。
+6. SUSFS 模块：按 `upstreams.module` 的 commit 从 GitHub 获取 sidex15/susfs4ksu-module（R28），
+   去掉 `exclude` 列出的路径（仓库自己的 `.github`、`.gitignore`、`LICENSE`、`README.md`，以及上游
+   预编译的 `tools/ksu_susfs_arm64`、`tools/sus_su_arm64`），把 `crlf_to_lf` 列出的 8 个文件从 CRLF
+   转成 LF，再应用 `patches/module/series`，结果在 `module/susfs4ksu`。去掉 4 项仓库自身的路径（共 8 个文件）后，上游树
+   与 R28 发布包 `ksu_module_susfs_1.5.2+.zip`（SHA-256 `abcd6bf4…`）的 78 个文件逐字节相同；
+   转换的正是旧版仓库副本里由 Git `autocrlf` 统一过换行的文件，CRLF 与 LF 混用的 4 个 HTML 保持原样。
+   排除规则不再匹配任何路径，或者列出的文件不再是纯 CRLF，组装都会停下。组装结果的各文件
+   SHA-256 记入 `configs/ci-source.json` 的 `module_files`，导出模块 ZIP 前逐项核对。
+7. 原生构建：固定 Manager checkout 上应用 `patches/manager/series`。
 
 三个固定提交的源码归档由 `git archive` 生成在 `upstream/archives/`。捕捉驱动差异与
 打包交付使用同一份 builtin 归档。使用 `--mirror-root` 时，`KernelSU/` 镜像需要

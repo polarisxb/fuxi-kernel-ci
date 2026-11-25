@@ -97,6 +97,33 @@ class WatchTests(unittest.TestCase):
         for rule in info["exclude"]:
             self.assertNotIn(unittest.mock.call("module", rule, commit=NEW), self.fetch.call_args_list)
 
+    def test_unavailable_module_tree_reports_unchecked_rules_and_replays_patches(self):
+        self.change("module")
+        self.start(W, "module_tree", side_effect=OSError("HTTP 403"))
+        self.queue("module", ("file", "one", "two"))
+        self.data["module", "file", NEW] = b"one\n"
+        report, updates = self.run_report()
+        self.assertIn("无法读取模块文件列表：HTTP 403；exclude 规则和文件权限没有检查", report)
+        self.assertNotIn("exclude matches nothing", report)
+        self.assertNotIn("Upstream Git mode:", report)
+        self.assertIn("0001-sample.patch: applies", report)
+        self.assertEqual(updates, {"module": NEW})
+
+    def test_redirected_gbk_stdout_receives_utf8(self):
+        markdown = "report ✓\n"
+        updates = {"✓": NEW}
+        with patch.object(W, "report", return_value=(markdown, updates)):
+            for args in (["--dry-run"], ["--write", str(self.root / "out")]):
+                with self.subTest(args=args), patch.object(sys, "argv", ["watch", *args]):
+                    with io.TextIOWrapper(io.BytesIO(), encoding="gbk") as output, redirect_stdout(output):
+                        W.main()
+                        received = output.buffer.getvalue().decode("utf-8")
+                    if args[0] == "--dry-run":
+                        self.assertEqual(received, markdown)
+                    else:
+                        self.assertIn("✓", received)
+                        self.assertEqual(json.loads(received), updates)
+
     def test_susfs_replays_official_patch_on_pinned_common_before_local_queue(self):
         self.change("susfs")
         info = self.layout["upstreams"]["susfs"]
@@ -119,9 +146,9 @@ class WatchTests(unittest.TestCase):
         self.change("manager")
         before = (self.root / "ci-layout.json").read_bytes()
         with patch.object(W.source, "ROOT", self.root), patch.object(sys, "argv", ["watch", "--write", str(self.root / "out")]):
-            with redirect_stdout(io.StringIO()) as output:
+            with io.TextIOWrapper(io.BytesIO(), encoding="gbk") as output, redirect_stdout(output):
                 W.main()
-        self.assertEqual(json.loads(output.getvalue()), {"manager": NEW})
+                self.assertEqual(json.loads(output.buffer.getvalue()), {"manager": NEW})
         report, = (self.root / "out").iterdir()
         self.assertIn(b"## manager", report.read_bytes())
         self.assertEqual(before, (self.root / "ci-layout.json").read_bytes())

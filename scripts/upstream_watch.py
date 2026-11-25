@@ -76,6 +76,7 @@ def put(tree, path, data):
 def inspect(name, info, head, tree, directory):
     files = {path for patch in Q.read_series(directory) for path in touched(patch.read_bytes())}
     notes, missing = [], set()
+    modes = None
     component = name
     revision = head
     if name == "susfs":
@@ -85,12 +86,16 @@ def inspect(name, info, head, tree, directory):
             files.update(touched(official))
         files.update(info["kernel_files"])
     if name == "module":
-        modes = module_tree(info, head)
         files.update(info["crlf_to_lf"])
         files.add("module.prop")
-        for rule in info["exclude"]:
-            if not any(Q.module_excluded(path, {"exclude": [rule]}) for path in modes):
-                notes.append(f"Review lock rule: exclude matches nothing: {rule}")
+        try:
+            modes = module_tree(info, head)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            notes.append(f"无法读取模块文件列表：{error}；exclude 规则和文件权限没有检查")
+        else:
+            for rule in info["exclude"]:
+                if not any(Q.module_excluded(path, {"exclude": [rule]}) for path in modes):
+                    notes.append(f"Review lock rule: exclude matches nothing: {rule}")
     source.unique_case(files)
     for path in sorted(files):
         if name == "module" and Q.module_excluded(path, info):
@@ -108,9 +113,9 @@ def inspect(name, info, head, tree, directory):
             missing.add(path)
         else:
             target = put(tree, path, data)
-            if name == "module" and modes.get(path) == "100755":
+            if modes is not None and modes.get(path) == "100755":
                 target.chmod(0o755)
-    if name == "module":
+    if modes is not None:
         for patch in Q.read_series(directory):
             data = patch.read_bytes()
             if b"\nold mode " in data:
@@ -209,11 +214,11 @@ def main():
     try:
         markdown, updates = report(source.ROOT, date)
         if args.write is None:
-            sys.stdout.write(markdown)
+            sys.stdout.buffer.write(markdown.encode("utf-8"))
         else:
             args.write.mkdir(parents=True, exist_ok=True)
             (args.write / f"{date}.md").write_bytes(markdown.encode("utf-8"))
-            print(json.dumps(updates))
+            sys.stdout.buffer.write((json.dumps(updates, ensure_ascii=False) + "\n").encode("utf-8"))
     except (ValueError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Upstream watch stopped: {error}\n")
 

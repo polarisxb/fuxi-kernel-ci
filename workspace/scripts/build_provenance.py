@@ -10,6 +10,7 @@ from functools import lru_cache
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path, PurePosixPath
 import stat
 import subprocess
@@ -35,6 +36,22 @@ OUTPUTS = {
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+BASELINE_CERT_SHA256 = '00080bc679cedd7f379bd70a83302fdb37566cb2b2354ea7d3d3162ecac3fc2c'
+
+
+def check_signing_certificate(actual, baseline):
+    mode = os.environ.get('FUXI_SIGNING_MODE', 'release')
+    if mode == 'release':
+        require(actual == baseline == BASELINE_CERT_SHA256, 'Public signing certificate differs from baseline')
+    elif mode == 'ephemeral':
+        expected = os.environ.get('FUXI_SIGNING_CERT_SHA256', '')
+        require(re.fullmatch(r'[0-9a-f]{64}', expected) and expected != BASELINE_CERT_SHA256,
+                'Missing or invalid temporary signing certificate digest')
+        require(actual == expected, 'Build signing certificate differs from generated certificate')
+    else:
+        raise ValueError(f'Unknown signing mode: {mode}')
 
 
 @lru_cache(maxsize=1)

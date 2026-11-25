@@ -87,7 +87,7 @@
   "source_epoch": 1776217181,
   "source_timestamp": "Tue, 14 Apr 2026 18:39:41 -0700",
   "workflow_interfaces": {
-    "kernel": "bash scripts/ci-build.sh --workspace WORK --dist DIST",
+    "kernel": "bash scripts/ci-build.sh --workspace WORK --dist DIST --signing release|ephemeral",
     "native": "bash scripts/build-ksud.sh --workspace WORK --dist DIST"
   }
 }

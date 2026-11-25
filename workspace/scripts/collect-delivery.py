@@ -217,7 +217,10 @@ def collect(root):
         V.run([sys.executable, root / 'scripts/verify-build.py', '--out-dir', out,
                '--report-dir', reports / 'offline', '--expected-ksu', 'yes'],
               env=verification_environment)
-        (reports / 'uapi.log').write_bytes(V.run([sys.executable, root / 'scripts/verify-uapi.py']))
+        V.run([sys.executable, root / 'scripts/verify-release.py'])
+        uapi_report = V.run([sys.executable, root / 'scripts/verify-uapi.py'])
+        (reports / 'uapi.log').write_bytes(uapi_report)
+        print(uapi_report.decode(), file=sys.stderr, flush=True)
         releases = root / 'releases'
         releases.mkdir(exist_ok=True)
         stage = Path(tempfile.mkdtemp(prefix='.pending-', dir=releases))
@@ -250,6 +253,7 @@ def collect(root):
                 elif path.name == 'uapi':
                     shutil.copytree(path, stage / 'reports/uapi')
             shutil.copytree(reports / 'offline', stage / 'reports/offline')
+            shutil.copytree(root / 'upstream/manager-uapi', stage / 'reports/uapi/manager-headers')
             for path in sorted((root / 'logs').glob('*.log')):
                 copy(path, stage / 'logs' / path.name)
             readme = inputs['readme'].read_text(encoding='utf-8').format_map(build_identity)

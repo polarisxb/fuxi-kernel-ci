@@ -340,7 +340,7 @@ def archive_upstreams(workspace, cache, mirror_root, identity):
         run(["git", "-C", cached, "archive", "--format=tar.gz", f"--prefix={name}-{revision}/",
              "--output", directory / identity[archive_key], revision])
         caches[name] = cached
-    return caches["susfs"]
+    return caches
 
 
 def verify_driver_archive(workspace, driver):
@@ -374,6 +374,8 @@ def write_workspace_identity(workspace, projects):
     version = Q.kernel_version(makefile.read_text(encoding="utf-8"))
     require(version == identity["kernel_version"], f"Unexpected kernel version in Makefile: {version}")
     identity["actual_kernel_version"] = version
+    headers = workspace / "upstream/manager-uapi"
+    identity["manager_uapi_sha256"] = {path.name: sha256(path) for path in sorted(headers.glob("*.h"))}
     locked = [{"path": project["path"], "sha": project["revision"],
                "shared_readonly": project["path"] != "common"} for project in projects]
     configs = workspace / "configs"
@@ -405,8 +407,12 @@ def prepare_kernel(workspace, cache, mirror_root=None):
             path.symlink_to(os.path.relpath(target, path.parent), target_is_directory=target.is_dir())
     common = kernel / "common"
     identity = load_helper("identity").derive(LAYOUT)
-    susfs_cache = archive_upstreams(workspace, cache, mirror_root, identity)
-    susfs = install_susfs(workspace, common, susfs_cache)
+    upstream_caches = archive_upstreams(workspace, cache, mirror_root, identity)
+    susfs = install_susfs(workspace, common, upstream_caches["susfs"])
+    with tempfile.TemporaryDirectory(dir=workspace) as temporary:
+        manager = Path(temporary) / "manager"
+        checkout(upstream_caches["manager"], identity["manager_commit"], manager, sparse=["uapi"])
+        (manager / "uapi").rename(workspace / "upstream/manager-uapi")
     Q.write_scmversion(common, LAYOUT["kernel_release"], COMMON_SHA)
     queues = {"common": Q.apply_series(common, Q.queue_directory(REPO, LAYOUT, "common"))}
     builtin_archive = workspace / "upstream/archives" / identity["builtin_archive"]

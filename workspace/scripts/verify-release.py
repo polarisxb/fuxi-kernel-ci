@@ -15,9 +15,18 @@ def verify():
   raise ValueError('Unexpected driver version/source identity')
  dispatch=(KERNEL/'supercall/dispatch.c').read_text()
  entries=re.findall(r'\.cmd\s*=\s*(KSU_IOCTL_\w+),.*?\.handler\s*=\s*(\w+),.*?\.perm_check\s*=\s*(\w+)',dispatch,re.S)
- expected=json.loads((ROOT/'configs/manager40900-ioctl-permissions.json').read_text())
+ expected=json.loads((ROOT/'configs/driver-ioctl-permissions.json').read_text())
  actual={cmd:permission for cmd,handler,permission in entries}
- if len(entries)!=31 or actual!=expected:raise ValueError('Locked Manager ioctl coverage/permissions differ: '+str(actual))
+ commands=re.findall(r'\.cmd\s*=\s*(KSU_IOCTL_\w+)',dispatch)
+ if commands!=[cmd for cmd,handler,permission in entries] or len(commands)!=len(actual):
+  raise ValueError('Incomplete or duplicate driver dispatch entries')
+ header=(KERNEL/'include/uapi/supercall.h').read_text()
+ header=re.sub(r'/\*.*?\*/|//[^\n]*','',header,flags=re.S)
+ declared=set(re.findall(r'\bKSU_IOCTL_[A-Z0-9_]+\b',header))
+ if declared!=expected.keys():
+  raise ValueError('Driver ioctl declarations differ from lock: '+str(sorted(declared ^ expected.keys())))
+ implemented={cmd:permission for cmd,permission in expected.items() if permission!='declared_only'}
+ if actual!=implemented:raise ValueError('Driver dispatch permissions differ from lock: '+str(actual))
  sources='\n'.join(p.read_text() for p in KERNEL.rglob('*.c'))
  for cmd,handler,permission in entries:
   if not re.search(r'\b(?:int|long)\s+'+re.escape(handler)+r'\s*\([^;]*?\)\s*\{',sources,re.S):

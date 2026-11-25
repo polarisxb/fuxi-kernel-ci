@@ -47,7 +47,8 @@ BASE_REQUIRED = {
     'scripts/preflight.py', 'scripts/check-config.py',
     'scripts/verify-delivery.py', 'scripts/collect-delivery.py',
     'scripts/run-build.sh', 'scripts/verify-build.py', 'scripts/verify-uapi.py',
-}
+} | {'reports/uapi/manager-headers/' + name for name in
+     ('app_profile.h', 'feature.h', 'selinux.h', 'sulog.h', 'supercall.h')}
 SUSFS_OPTIONS = {
     'CONFIG_KSU_SUSFS', 'CONFIG_KSU_SUSFS_SUS_PATH', 'CONFIG_KSU_SUSFS_SUS_MOUNT',
     'CONFIG_KSU_SUSFS_SUS_KSTAT', 'CONFIG_KSU_SUSFS_SPOOF_UNAME',
@@ -215,7 +216,16 @@ def verify_image(root):
     require(offline['checks']['image_and_elf']['result']['Image_sha256'] == sha256(root / 'Image'),
             'Offline report describes a different Image')
     uapi = json.loads((root / 'reports/uapi/complete-uapi-alignment.json').read_text())
-    require(uapi.get('compared_shared_ioctl_constants') == 31
+    manager_headers = root / 'reports/uapi/manager-headers'
+    hashes = {path.name: sha256(path) for path in manager_headers.glob('*.h')}
+    require(hashes == identity['manager_uapi_sha256'] and uapi['manager_sha'] == identity['manager_commit'],
+            'Delivered Manager headers differ from build identity')
+    require(all(hashes.get(name) == digest for name, digest in uapi['header_sha256']['manager'].items()),
+            'UAPI comparison used different Manager headers')
+    count = uapi.get('compared_shared_ioctl_constants')
+    require(type(count) is int and count > 0
+            and uapi.get('compatibility_rule') == 'shared-interfaces-equal'
+            and uapi.get('shared_interfaces_all_equal') is True
             and uapi.get('arm64_values_all_equal') is True
             and uapi.get('profile_version') == 4, 'Incomplete Manager UAPI validation')
     return release

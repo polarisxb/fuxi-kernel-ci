@@ -71,6 +71,16 @@ tag 消失也拒绝。恢复记录随原生 metadata 发布，`build.rs` 的 Git
 路径、提交和只读属性。校对内核 Makefile 后将版本和文件名写入 `configs/build-identity.json`；
 两个文件都随构建配置冻结，并随离线交付包分发。
 
+kernel 作业复用 Manager 归档的 Git 缓存，从锁定提交稀疏检出 `uapi/` 到
+`upstream/manager-uapi/`。各头文件的 SHA-256 记入构建身份的 `manager_uapi_sha256`，
+交付包中的对应文件位于 `reports/uapi/manager-headers/`。
+
+`verify-uapi.py` 比较 host 与 arm64 上共有接口的值、大小和成员偏移。
+UAPI 版本和 profile 版本必须在双方存在并一致。单侧声明的 ioctl 和结构体按所属方列入
+`reports/uapi/complete-uapi-alignment.json`，不导致失败。导出时将 Manager 独有的 ioctl
+列表写入 `kernel-build-info.json` 的 `uapi.manager_only_ioctl_constants`。
+驱动每个已实现命令的 handler 与权限仍按 `configs/driver-ioctl-permissions.json` 验证。
+
 任何补丁打不上都会以补丁文件名报错停止，不会带着旧改动继续构建。组装后仍从
 实际 Git checkout 生成 `common-final.diff` / `sukisu-final.diff`，与发布中的
 干净源码重放保持一致。构建与真实 ELF/CRC/UAPI/签名验收由便携工作区脚本负责。

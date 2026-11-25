@@ -81,7 +81,11 @@ def verify_ci_source(workspace, release_root, source_sha):
     require(provenance["inputs"]["configs"].get("ci-source.json") == expected,
             "CI source identity is not bound to the successful compilation")
     identity_path = release_root / "configs/build-identity.json"
-    require(json.loads(identity_path.read_bytes()) == dict(IDENTITY, actual_kernel_version=IDENTITY["kernel_version"]),
+    manager_headers = workspace / "upstream/manager-uapi"
+    header_hashes = {path.name: sha256(path) for path in manager_headers.glob("*.h")}
+    expected_identity = dict(IDENTITY, actual_kernel_version=IDENTITY["kernel_version"],
+                             manager_uapi_sha256=header_hashes)
+    require(header_hashes and json.loads(identity_path.read_bytes()) == expected_identity,
             "Delivered build identity differs from the repository lock")
     require(provenance["inputs"]["configs"].get("build-identity.json") == {
         "type": "file", "sha256": sha256(identity_path),
@@ -127,6 +131,10 @@ def export(workspace, dist, reports):
     require(len(source_sha) == 40 and all(char in "0123456789abcdef" for char in source_sha),
             "A complete CI source SHA is required")
     verify_ci_source(workspace, release_root, source_sha)
+    alignment = json.loads((release_root / "reports/uapi/complete-uapi-alignment.json").read_bytes())
+    manager_only = alignment["manager_only_ioctl_constants"]
+    require(isinstance(manager_only, list) and all(isinstance(name, str) for name in manager_only),
+            "Invalid Manager-only ioctl list in the verified UAPI report")
     source_identity = {
         name: sha256(release_root / "source-diffs" / name)
         for name in ("common.diff", "SukiSU.diff", "integrated-source-manifest.json")
@@ -148,6 +156,7 @@ def export(workspace, dist, reports):
             "run_id": os.environ.get("GITHUB_RUN_ID", "local"),
             "kernel_release": (release_root / "kernel.release").read_text().strip(),
             "image_sha256": sha256(release_root / "Image"),
+            "uapi": {"manager_only_ioctl_constants": manager_only},
             "public_certificate_sha256": sha256(release_root / "public-certificates/signing_key.x509"),
             "driver_version": IDENTITY["driver_version"],
             "manager_version": IDENTITY["manager_version_code"],

@@ -320,9 +320,35 @@ def install_susfs(workspace, common, cached):
     """Fetch SUSFS at its pin and apply the official GKI kernel patch to common."""
     info = UPSTREAMS["susfs"]
     source = workspace / "upstream/susfs4ksu"
-    checkout(cached, info["commit"], source, sparse=["kernel_patches"])
+    checkout(cached, info["commit"], source, sparse=["kernel_patches", "ksu_susfs"])
     record = Q.install_susfs(common, source, info)
     return {"url": info["url"], "commit": info["commit"], "version": info["version"], **record}
+
+
+SUSFS_TOOL_LIBRARIES = {"libc.so", "libdl.so", "libm.so", "liblog.so"}
+
+
+def build_susfs_tool(workspace):
+    """Compile ksu_susfs from the same SUSFS checkout as the kernel, with the pinned NDK."""
+    output = workspace / "upstream/susfs-tool"
+    project = output / "src"
+    # ndk-build writes obj/ and libs/ beside jni/, so it builds a copy of the checkout.
+    shutil.copytree(workspace / "upstream/susfs4ksu/ksu_susfs", project)
+    ndk = workspace / "kernel/prebuilts/ndk-r23"
+    print(run([ndk / "ndk-build", "NDK_PROJECT_PATH=."], cwd=project), flush=True)
+    tool = output / "ksu_susfs"
+    shutil.copyfile(project / "libs/arm64-v8a/ksu_susfs", tool)
+    tool.chmod(0o755)
+    with tool.open("rb") as stream:
+        header = stream.read(20)
+    require(len(header) == 20 and header[:6] == b"\x7fELF\x02\x01" and struct.unpack_from("<H", header, 18)[0] == 183,
+            "ksu_susfs is not a little-endian ELF64 AArch64 file")
+    readelf = ndk / "toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+    needed = re.findall(r"\(NEEDED\)\s+Shared library: \[([^\]]+)\]", run([readelf, "--dynamic-table", tool]))
+    require(set(needed) <= SUSFS_TOOL_LIBRARIES, f"ksu_susfs needs libraries outside Bionic: {needed}")
+    record = {"sha256": sha256(tool), "bytes": tool.stat().st_size, "ndk_commit": NDK_SHA}
+    print(f"Built ksu_susfs from SUSFS {UPSTREAMS['susfs']['commit'][:12]}: {record}, needs {needed}", flush=True)
+    return record
 
 
 def archive_upstreams(workspace, cache, mirror_root, identity):
@@ -368,7 +394,7 @@ def load_delivery_verifier():
     return module
 
 
-def write_workspace_identity(workspace, projects):
+def write_workspace_identity(workspace, projects, susfs_tool):
     identity = load_helper("identity").derive(LAYOUT)
     makefile = workspace / "kernel/common/Makefile"
     version = Q.kernel_version(makefile.read_text(encoding="utf-8"))
@@ -376,6 +402,7 @@ def write_workspace_identity(workspace, projects):
     identity["actual_kernel_version"] = version
     headers = workspace / "upstream/manager-uapi"
     identity["manager_uapi_sha256"] = {path.name: sha256(path) for path in sorted(headers.glob("*.h"))}
+    identity["ksu_susfs"] = susfs_tool
     locked = [{"path": project["path"], "sha": project["revision"],
                "shared_readonly": project["path"] != "common"} for project in projects]
     configs = workspace / "configs"
@@ -409,6 +436,7 @@ def prepare_kernel(workspace, cache, mirror_root=None):
     identity = load_helper("identity").derive(LAYOUT)
     upstream_caches = archive_upstreams(workspace, cache, mirror_root, identity)
     susfs = install_susfs(workspace, common, upstream_caches["susfs"])
+    susfs_tool = build_susfs_tool(workspace)
     with tempfile.TemporaryDirectory(dir=workspace) as temporary:
         manager = Path(temporary) / "manager"
         checkout(upstream_caches["manager"], identity["manager_commit"], manager, sparse=["uapi"])
@@ -426,13 +454,13 @@ def prepare_kernel(workspace, cache, mirror_root=None):
                            (REPO / "workspace/tests", workspace / "tests"),
                            (REPO / "module", workspace / "module")):
         copy_overlay(source, target)
-    write_workspace_identity(workspace, projects)
+    write_workspace_identity(workspace, projects, susfs_tool)
     (workspace / "configs/ci-source.json").write_text(json.dumps(ci_source_info(), indent=2) + "\n")
     (workspace / "reports").mkdir()
     capture_patches(workspace, builtin_archive)
     return {"kind": "kernel", "projects": [{k: v for k, v in p.items() if k != "links"}
                                              for p in projects],
-            "susfs": susfs, "driver": {"commit": UPSTREAMS["driver"]["commit"],
+            "susfs": susfs, "susfs_tool": susfs_tool, "driver": {"commit": UPSTREAMS["driver"]["commit"],
                                        "archive": builtin_archive.relative_to(workspace).as_posix()},
             "patch_queues": queues, "kernel_release": LAYOUT["kernel_release"],
             "source_epoch": LAYOUT["source_epoch"], "source_timestamp": LAYOUT["source_timestamp"]}

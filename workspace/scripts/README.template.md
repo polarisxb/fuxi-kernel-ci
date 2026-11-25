@@ -20,7 +20,8 @@ CFI、MODVERSIONS、MODULE_SIG_PROTECT 和严格 KMI。没有引入 LKM、Magisk
 成功构建实际使用的配置。锁定的 Clang 14 / CFI / BTF 组合拒绝多分区，
 避免 BTF 内部符号与 CFI 跳表在分区间失配。
 SUSFS 原有路径、挂载、kstat、uname、符号隐藏、启动参数、重定向和映射功能
-均要求配置启用。tools/ksu_susfs 是与此 {susfs_version} 源码配套的 ARM64 工具。
+均要求配置启用。tools/ksu_susfs 由 CI 用同一 SUSFS 提交的 ksu_susfs 源码和锁定的
+NDK r23 编译（SHA256 {ksu_susfs[sha256]}），模块里的 tools/ksu_susfs_arm64 是同一个文件。
 
 候选包通过编译与离线检查后才发布。构建期间冻结候选输入，并把源码、
 配置与生成的二进制摘要绑定；验收拒绝无构建记录或源码/镜像混配。
@@ -49,8 +50,8 @@ AnyKernel3 ZIP 只接受 fuxi，目标为活动槽 boot；不会替换 init_boot
 不足以证明全部运行功能。此前无 SUSFS 对照内核的实测不算本包的实机验证。
 
 本次保持 SUSFS {susfs_short}，不变更 Manager/驱动 {driver_version} 或已锁定的控制接口。
-内核包不自动替换模块脚本；{module_local} 模块继续使用经核验的 {module_release} ARM64 工具，
-与随内核源码编译的交付工具是两份不同二进制。只读验收命令：
+内核包不自动替换模块脚本；{module_local} 模块安装时按上面的 SHA256 核对并安装同一个工具，
+不再使用 {module_release} 自带的预编译工具。只读验收命令：
 
     ksu_susfs show version
     ksu_susfs show enabled_features

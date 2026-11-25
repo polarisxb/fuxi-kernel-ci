@@ -56,7 +56,7 @@
     "manager_version_code": 40900,
     "manager_version_name": "4.2.0-1-g904c60d1",
     "module_release": "R28",
-    "module_local": "local2"
+    "module_local": "local3"
   },
   "names": {
     "kernel_zip": "Fuxi_{kernel_version}_SukiSU_{driver_version}_SUSFS_{susfs_short}_{release_suffix}_AnyKernel3.zip",

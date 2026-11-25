@@ -2,6 +2,7 @@
 """Check bootstrap trust boundaries using temporary archives and real local Git."""
 import importlib.util
 from contextlib import ExitStack, nullcontext, redirect_stdout
+import hashlib
 import io
 import json
 import os
@@ -39,9 +40,11 @@ class BootstrapTests(unittest.TestCase):
         makefile = common / "Makefile"
         makefile.write_bytes(("VERSION = %s\nPATCHLEVEL = %s\nSUBLEVEL = %s\nEXTRAVERSION =\n"
                               % tuple(version)).encode())
-        B.write_workspace_identity(self.root, projects)
+        tool = {"sha256": "1" * 64, "bytes": 7, "ndk_commit": B.NDK_SHA}
+        B.write_workspace_identity(self.root, projects, tool)
         identity = json.loads((configs / "build-identity.json").read_bytes())
         self.assertEqual(identity["actual_kernel_version"], identity["kernel_version"])
+        self.assertEqual(identity["ksu_susfs"], tool)
         self.assertEqual(identity["kernel_release"], B.LAYOUT["kernel_release"])
         entries = json.loads((configs / "locked-workspace-inputs.json").read_bytes())
         self.assertEqual([(e["path"], e["sha"]) for e in entries],
@@ -50,7 +53,46 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual([e["path"] for e in entries if not e["shared_readonly"]], ["common"])
         makefile.write_bytes(b"VERSION = 0\nPATCHLEVEL = 0\nSUBLEVEL = 0\nEXTRAVERSION =\n")
         with self.assertRaisesRegex(ValueError, "kernel version"):
-            B.write_workspace_identity(self.root, projects)
+            B.write_workspace_identity(self.root, projects, tool)
+
+    def fake_susfs_tool_build(self, machine=183, needed=("libc.so", "libdl.so")):
+        """A pinned SUSFS checkout plus a stand-in for ndk-build and llvm-readelf."""
+        jni = self.root / "upstream/susfs4ksu/ksu_susfs/jni"
+        jni.mkdir(parents=True)
+        (jni / "Android.mk").write_bytes(b"include $(BUILD_EXECUTABLE)\n")
+        binary = b"\x7fELF\x02\x01" + b"\0" * 12 + struct.pack("<H", machine) + b"tool body"
+        calls = []
+
+        def run(args, cwd=None, env=None):
+            calls.append((Path(args[0]).name, cwd))
+            if Path(args[0]).name == "ndk-build":
+                built = Path(cwd) / "libs/arm64-v8a/ksu_susfs"
+                built.parent.mkdir(parents=True)
+                built.write_bytes(binary)
+                return "[arm64-v8a] Executable     : ksu_susfs"
+            return "".join(f"  0x0000000000000001 (NEEDED)  Shared library: [{name}]\n" for name in needed)
+        return binary, calls, run
+
+    def test_susfs_tool_is_built_from_a_copy_of_the_pinned_checkout(self):
+        binary, calls, run = self.fake_susfs_tool_build()
+        with mock.patch.object(B, "run", run), redirect_stdout(io.StringIO()):
+            record = B.build_susfs_tool(self.root)
+        self.assertEqual((self.root / "upstream/susfs-tool/ksu_susfs").read_bytes(), binary)
+        self.assertEqual(record, {"sha256": hashlib.sha256(binary).hexdigest(), "bytes": len(binary),
+                                  "ndk_commit": B.NDK_SHA})
+        self.assertEqual([name for name, _ in calls], ["ndk-build", "llvm-readelf"])
+        self.assertEqual(calls[0][1], self.root / "upstream/susfs-tool/src")
+        self.assertFalse((self.root / "upstream/susfs4ksu/ksu_susfs/libs").exists())
+
+    def test_susfs_tool_must_be_aarch64_and_need_only_bionic(self):
+        for machine, needed, message in ((62, ("libc.so",), "AArch64"),
+                                         (183, ("libc.so", "libc++_shared.so"), "outside Bionic")):
+            with self.subTest(message=message):
+                shutil.rmtree(self.root / "upstream", ignore_errors=True)
+                _, _, run = self.fake_susfs_tool_build(machine, needed)
+                with mock.patch.object(B, "run", run), redirect_stdout(io.StringIO()), \
+                        self.assertRaisesRegex(ValueError, message):
+                    B.build_susfs_tool(self.root)
 
     def archive(self, members):
         path = self.root / "input.tar.gz"

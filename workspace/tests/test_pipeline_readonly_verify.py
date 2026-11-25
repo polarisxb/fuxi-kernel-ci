@@ -37,10 +37,13 @@ class ReadonlyVerificationTests(unittest.TestCase):
                 path.write_bytes(('fixture ' + name).encode())
             for name in ('verify-delivery.py', 'build_provenance.py', *P.BUILD_SCRIPTS):
                 shutil.copy2(ROOT / 'scripts' / name, root / 'scripts' / name)
-            build_identity = dict(V.IDENTITY, apk_sha256=V.sha256(root / V.APK_NAME))
+            tool = b'\x7fELF\x02\x01' + b'\0' * 12 + struct.pack('<H', 183)
+            (root / 'tools/ksu_susfs').write_bytes(tool)
+            build_identity = dict(V.IDENTITY, apk_sha256=V.sha256(root / V.APK_NAME),
+                                  ksu_susfs=dict(V.IDENTITY['ksu_susfs'], sha256=hashlib.sha256(tool).hexdigest(),
+                                                 bytes=len(tool)))
             (root / 'configs/build-identity.json').write_bytes(json.dumps(build_identity).encode())
             (root / 'source-diffs/integrated-source-manifest.json').write_text('{}')
-            (root / 'tools/ksu_susfs').write_bytes(b'\x7fELF\x02\x01' + b'\0' * 12 + struct.pack('<H', 183))
             record = {
                 'schema_version': 1, 'status': 'complete', 'build_returncode': 0,
                 'attempt': 'isolated-fixture',

@@ -1,9 +1,16 @@
-# Fuxi R28 local adaptation — local2
+# Fuxi R28 local adaptation — local3
 Based on sidex15/susfs4ksu-module v1.5.2+_R28, original asset SHA256 abcd6bf456ea8189298d9e496faa440201d90e4f0bd93b83c0527589001c9376.
 Requires the already installed driver40900 and SUSFS2.3.0. This is a local adaptation, not an unchanged official release.
-The official bundled ARM64 helper is retained byte-for-byte and pinned to SHA256 8b9fa0174ab9bc95910258f935628dfb9b551ae9b5074ba0eb1fa85e06590641; it passed show version/enabled_features/variant on this phone.
+The ARM64 helper `tools/ksu_susfs_arm64` is compiled by CI from the same pinned SUSFS commit as the kernel and is not stored in this source tree; packaging writes its SHA256 into `customize.sh` and `susfs-bin-check.sh` in place of `@KSU_SUSFS_SHA256@`, and `kernel-build-info.json` records the same digest.
 Installer always copies and verifies that helper; installation and action/update scripts no longer download executables. Module updateJson removed to avoid silently replacing the reviewed local changes. Manual updates require a reviewed package.
-Deprecated sus_su disabled for SUSFS2.x. Other upstream defaults, including suspicious mount hiding and visible boot-property changes, remain as upstream. Does not actually relock the bootloader or sign AVB. Zygisk is not required.
+sus_su is not shipped (SUSFS 2.x deprecated it). Other upstream defaults, including suspicious mount hiding and visible boot-property changes, remain as upstream. Does not actually relock the bootloader or sign AVB. Zygisk is not required.
+
+## local3 changes (2026-11-24)
+
+- The helper is built from `ksu_susfs/jni` at the kernel's SUSFS commit with the pinned NDK r23, instead of shipping the prebuilt R28 binary (SHA256 8b9fa0174ab9bc95910258f935628dfb9b551ae9b5074ba0eb1fa85e06590641), so its commands always match the kernel's SUSFS interface.
+- The prebuilt `sus_su_arm64` and the installer branch that copied it for SUSFS below 2.0 are removed.
+- `module.prop` uses `v1.5.2-R28-fuxi230-local3` / versionCode `105002030`. This follows the previous rule (R28 = 105002028, local2 = 105002029) and would collide with an upstream R30; the numbering must be redefined before moving to a newer upstream module.
+- The CI-built helper has not yet run on the phone. It must pass `show version`, `show enabled_features` and `show variant`, open the WebUI and boot without SUSFS log errors before this package replaces local2.
 
 ## local2 changes (2026-11-10)
 

@@ -24,19 +24,22 @@ jobs:
       - name: Validate bootstrap and Windows clients
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
 
-  kernel:
-    if: github.event_name != 'pull_request'
+  kernel-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: release-signing
     needs: verify
     runs-on: ubuntu-24.04
     timeout-minutes: 330
-    env:
+    env: &kernel-env
       CI_SOURCE_SHA: ${{ github.sha }}
       CI_SOURCE_REF: ${{ github.ref }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - &kernel-checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Prepare hosted runner capacity
+      - &kernel-capacity
+        name: Prepare hosted runner capacity
         shell: bash
         run: |
           set -euo pipefail
@@ -65,11 +68,13 @@ jobs:
           printf '%s\n' $(( total_kib * 1024 - 2 * 1024 * 1024 * 1024 )) | sudo tee /sys/fs/cgroup/fuxi-build/memory.high
           free -h
           df -h "$RUNNER_TEMP"
-      - name: Install kernel build tools
+      - &kernel-tools
+        name: Install kernel build tools
         run: |
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential cpio flex git kmod libelf-dev libssl-dev lz4 pahole pkg-config python3 rsync unzip zip
-      - name: Cache pinned public inputs
+      - &kernel-cache
+        name: Cache pinned public inputs
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/fuxi-inputs
@@ -77,10 +82,11 @@ jobs:
       - name: Build and verify the signed kernel ZIP
         env:
           KERNEL_SIGNING_KEY_PEM: ${{ secrets.KERNEL_SIGNING_KEY_PEM }}
-          FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
+          SIGNING_MODE: release
         shell: bash
-        run: |
+        run: &kernel-build |
           set -euo pipefail
+          export FUXI_INPUTS_CACHE="$RUNNER_TEMP/fuxi-inputs"
           build_cgroup=/sys/fs/cgroup/fuxi-build
           printf '%s\n' "$$" | sudo tee "$build_cgroup/cgroup.procs" >/dev/null
           # A lost runner keeps no log, so the live log must already show how far memory got.
@@ -94,8 +100,9 @@ jobs:
           ) &
           monitor=$!
           trap 'kill "$monitor" 2>/dev/null || true' EXIT
-          bash scripts/ci-build.sh --workspace "$RUNNER_TEMP/fuxi-project" --dist "$GITHUB_WORKSPACE/dist/kernel"
-      - name: Upload verified kernel distribution
+          bash scripts/ci-build.sh --signing "$SIGNING_MODE" --workspace "$RUNNER_TEMP/fuxi-project" --dist "$GITHUB_WORKSPACE/dist/kernel"
+      - &kernel-upload
+        name: Upload verified kernel distribution
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: fuxi-kernel-${{ github.sha }}
@@ -103,7 +110,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
-      - name: Remove temporary signing material and swap
+      - &kernel-cleanup
+        name: Remove temporary signing material and swap
         if: always()
         shell: bash
         run: |
@@ -124,6 +132,25 @@ jobs:
             sudo swapoff "$RUNNER_TEMP/fuxi-ci.swap" || true
             sudo rm -f "$RUNNER_TEMP/fuxi-ci.swap"
           fi
+
+  kernel-check:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    env: *kernel-env
+    steps:
+      - *kernel-checkout
+      - *kernel-capacity
+      - *kernel-tools
+      - *kernel-cache
+      - name: Build and verify with a temporary certificate
+        env:
+          SIGNING_MODE: ephemeral
+        shell: bash
+        run: *kernel-build
+      - *kernel-upload
+      - *kernel-cleanup
 
   native:
     if: github.event_name != 'pull_request'
@@ -148,6 +175,7 @@ jobs:
           key: fuxi-native-inputs-${{ runner.os }}-${{ hashFiles('ci-layout.json', 'configs/manifest.locked.xml', 'reference/inputs.lock.json') }}
       - name: Build the matching ARM64 status detector
         env:
+          FUXI_SIGNING_MODE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'release' || 'ephemeral' }}
           FUXI_INPUTS_CACHE: ${{ runner.temp }}/fuxi-inputs
         run: bash scripts/build-ksud.sh --workspace "$RUNNER_TEMP/fuxi-native" --dist "$GITHUB_WORKSPACE/dist/native"
       - name: Upload verified userspace distribution
@@ -160,8 +188,8 @@ jobs:
           compression-level: 0
 
   publish:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [kernel, native]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [kernel-release, native]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -217,6 +245,8 @@ jobs:
                   checksums[match[2]] = match[1]
               if checksums.get(candidates[0].name) != hashlib.sha256(candidates[0].read_bytes()).hexdigest():
                   raise ValueError(f'{component}: metadata checksum mismatch')
+              if info.get('signing') != 'release':
+                  raise ValueError(f'{component}: release signing required for publication')
               metadata[component] = info
               verified_files.append((candidates[0], f'{component}-build-info.json'))
               for name in names:

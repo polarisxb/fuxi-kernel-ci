@@ -93,8 +93,7 @@ def preflight(root, inputs):
     V.require(V.sha256(inputs['stock']) == STOCK_SHA, 'Unexpected stock boot input')
     V.require(V.sha256(inputs['susfs_tool']) == identity['ksu_susfs']['sha256'],
               'SUSFS helper differs from the one bootstrap built')
-    V.require(V.sha256(inputs['baseline_cert']) == V.sha256(out / 'certs/signing_key.x509'),
-              'Build signing certificate differs from the locked baseline')
+    P.check_signing_certificate(V.sha256(out / 'certs/signing_key.x509'), V.sha256(inputs['baseline_cert']))
     head = V.run(['git', '-C', root / 'kernel/common', 'rev-parse', 'HEAD']).decode().strip()
     V.require(head == identity['common_commit'], 'Common source is not the locked baseline')
     release = (out / 'include/config/kernel.release').read_text().strip()

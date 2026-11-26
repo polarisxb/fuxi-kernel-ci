@@ -597,6 +597,8 @@ def verify_native_inputs(workspace, before_build=False):
 
 
 def verify_native(workspace, target_dir, dist):
+    signing = os.environ.get("FUXI_SIGNING_MODE", "ephemeral")
+    require(signing in ("release", "ephemeral"), "Unknown native build signing mode")
     identity = load_helper("identity").derive(LAYOUT)
     inputs = verify_native_inputs(workspace)
     artifact = target_dir / "aarch64-linux-android/release/ksud"
@@ -648,7 +650,7 @@ def verify_native(workspace, target_dir, dist):
     dist.mkdir(parents=True, exist_ok=True)
     require(not any(dist.iterdir()), f"Refusing non-empty native output: {dist}")
     final = dist / "libksud.so"; shutil.copy2(artifact, final)
-    info = {"schema_version": 1, "component": "ksud", "source_sha": source_sha,
+    info = {"schema_version": 1, "component": "ksud", "source_sha": source_sha, "signing": signing,
             "upstream_sha": MANAGER_SHA, "repository": os.environ.get("GITHUB_REPOSITORY", "polarisxb/fuxi-kernel-ci"),
             "source_ref": os.environ.get("CI_SOURCE_REF", os.environ.get("GITHUB_REF", "")),
             "run_id": os.environ.get("GITHUB_RUN_ID", "local"),

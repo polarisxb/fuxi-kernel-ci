@@ -43,4 +43,24 @@ Release 才是长期、无需登录的 agent 入口。输入 Release `inputs-v1`
 
 CI 验收证明源码、工具链、保护配置与产物绑定；它不替代每次修改后的实机
 启动、Root、模块与硬件验证。安装前仍需核对设备、系统和当前活动槽并备份。
-签名私钥只通过 Actions Secret 注入，不能放进源码、公共输入、缓存或 ZIP。
+
+## 签名模式
+
+`kernel-build-info.json` 和 `native-build-info.json` 的 `signing` 记录本次构建的发布资格。
+`main` 的 push 运行 `kernel-release`，校验固定的公开证书。分支 push 以及所有手动运行均运行
+`kernel-check`，在 runner 临时目录中生成一次性证书，核对实际编入内核的证书并验证模块签名。
+`ephemeral` 产物仅供检查，请勿刷机。发布任务要求两个组件均标记为 `release`。
+
+## 比较构建产物
+
+`scripts/compare-builds.py` 先核对 ZIP、原始 Image 与各自构建记录的哈希。两次运行的证书不同且至少一次为
+`ephemeral` 时，比较器在各自的 Image 中按证书 SHA256 定位唯一的 DER 证书，再定位所有 GNU build ID 注释。
+每个 Image 至少要有一处注释，两边的注释偏移必须逐项相同。比较器把证书和每处注释的 20 字节 ID 归零，
+然后逐字节比较，包括 vDSO 的其余内容。只有证书位置、长度及归零后的 Image 均相同，Image 内容差异才归入
+`signing_only`。报告保留原始哈希，只列出发生变化的 ID 及其注释头偏移。ZIP 条目的权限仍独立比较。
+
+两次 `release` 构建按原始 Image 和证书严格比较。退出码 0 表示 `differences` 为空，1 表示仍有差异，
+2 表示产物无效、证书无法唯一定位，或 build ID 注释缺失、截断、重叠或位置不一致。
+
+所有者目前没有原私钥文件，本阶段正式签名继续使用仓库级 secret。阶段 5 发布 r4 时将换用新私钥，
+仅保存在只允许 `main` 部署的 `release-signing` 环境中，随后删除旧的仓库级 secret。

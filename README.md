@@ -68,9 +68,13 @@ Manager 命令未在该驱动头文件中声明。空列表表示该版本没有
 公开证书和固定源码归档保存在 `inputs-v1` Release，由
 `reference/inputs.lock.json` 的 SHA 锁定；CI 不重复下载整包 ROM。
 
-唯一私密输入为 `KERNEL_SIGNING_KEY_PEM` repository Actions Secret，与已记录
-公开证书配对。私钥不进入仓库、缓存或 ZIP。输出只从验证通过的白名单 dist
-发布，避免泄露构建目录中的密钥。
+`main` 的 push 在 `release-signing` 环境中运行，当前使用仓库级签名 secret，证书须与公开基线一致。
+分支 push 和手动运行使用一次性证书完成同样的构建与签名验证，产物仅用于 CI 检查。
+只有 kernel 和 native 两份构建信息均标记为 `release` 的 main 构建才能发布。
+
+用 `scripts/compare-builds.py` 对比产物时，分支构建可能因一次性证书而产生不同的 Image。
+若报告将 Image 列入 `signing_only`，表示将两边的内嵌证书和相同位置的各个 GNU build ID 归零后，其余字节完全相同。
+两次正式发布的内核仍须逐字节相同。
 
 KernelSU、Linux、Manager 和模块保留各自源文件许可证；根目录 LICENSE 为
 Linux GPL-2.0。本地 Zygisk 修复库不是官方重签 Manager APK，更新/重装 Manager

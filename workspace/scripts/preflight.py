@@ -2,6 +2,8 @@
 """Fail before compilation when a locked input, signing pair or tool is absent."""
 from pathlib import Path
 import hashlib,json,os,shutil,subprocess,sys
+sys.dont_write_bytecode = True
+from build_provenance import BASELINE_CERT_SHA256, check_signing_certificate
 ROOT=Path(__file__).resolve().parent.parent
 SIGNING=Path(os.environ.get('SIGNING_KEY_DIR', ROOT/'inputs/signing'))
 
@@ -46,7 +48,7 @@ def verify():
  def signing():
   key=SIGNING/'signing_key.pem';cert=SIGNING/'signing_key.x509'
   if not key.is_file() or not cert.is_file():raise ValueError('required external signing key/certificate missing')
-  if digest(cert)!='00080bc679cedd7f379bd70a83302fdb37566cb2b2354ea7d3d3162ecac3fc2c':raise ValueError('public signing certificate differs from baseline')
+  check_signing_certificate(digest(cert), BASELINE_CERT_SHA256)
   public_key=run(['openssl','pkey','-in',key,'-pubout','-outform','DER'])
   cert_public=run(['openssl','x509','-inform','DER','-in',cert,'-pubkey','-noout'])
   cert_der=run(['openssl','pkey','-pubin','-outform','DER'],input=cert_public)

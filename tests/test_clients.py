@@ -401,7 +401,8 @@ class ReleaseCollectionTests(unittest.TestCase):
                 (folder / name).write_bytes((component + name).encode())
             records = {name: {"bytes": (folder / name).stat().st_size,
                               "sha256": hashlib.sha256((folder / name).read_bytes()).hexdigest()} for name in names}
-            (folder / metadata_name).write_text(json.dumps({"source_sha": self.sha, "artifacts": records}))
+            (folder / metadata_name).write_bytes(json.dumps({
+                "source_sha": self.sha, "artifacts": records, "signing": "release"}).encode())
             lines = [hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n" for p in folder.iterdir()]
             (folder / "SHA256SUMS").write_text("".join(lines))
 
@@ -427,6 +428,31 @@ class ReleaseCollectionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("payload checksum mismatch", result.stderr)
         self.assertFalse((self.root / "release-dist" / D.DEFAULT_ASSET).exists())
+
+    def test_only_explicit_release_metadata_from_both_jobs_can_be_published(self):
+        for component, filename in (("kernel", "kernel-build-info.json"), ("native", "build-info.json")):
+            folder = self.root / "collected" / component
+            path = folder / filename
+            original = path.read_bytes()
+            sums = folder / "SHA256SUMS"
+            original_sums = sums.read_bytes()
+            for mode in ("ephemeral", None):
+                with self.subTest(component=component, mode=mode):
+                    info = json.loads(original)
+                    if mode is None:
+                        del info["signing"]
+                    else:
+                        info["signing"] = mode
+                    payload = json.dumps(info).encode()
+                    path.write_bytes(payload)
+                    sums.write_bytes(original_sums.replace(hashlib.sha256(original).hexdigest().encode(),
+                                                          hashlib.sha256(payload).hexdigest().encode()))
+                    result = self.collect()
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("release signing required", result.stderr)
+                    self.assertFalse((self.root / "release-dist").exists())
+            path.write_bytes(original)
+            sums.write_bytes(original_sums)
 
     def test_wrong_component_commit_is_rejected(self):
         path = self.root / "collected/native/build-info.json"

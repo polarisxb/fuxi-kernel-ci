@@ -431,9 +431,11 @@ class BootstrapTests(unittest.TestCase):
     def test_native_metadata_binds_completed_library_and_zip_without_circular_hash(self):
         repo, work, target, dist = self.native_workspace()
         original_lock = (work / "source/Cargo.lock").read_bytes()
-        result = B.verify_native(work, target, dist)
+        with mock.patch.dict(os.environ, FUXI_SIGNING_MODE="ephemeral"):
+            result = B.verify_native(work, target, dist)
         external = json.loads((dist / "native-build-info.json").read_text())
         self.assertEqual(result, external)
+        self.assertEqual(external["signing"], "ephemeral")
         self.assertEqual(external["source_sha"], B.run(["git", "-C", repo, "rev-parse", "HEAD"]))
         self.assertEqual(external["source_inputs"]["before"], external["source_inputs"]["after"])
         self.assertEqual(external["historical_tag"],
@@ -455,6 +457,7 @@ class BootstrapTests(unittest.TestCase):
             self.assertIsNone(bundle.testzip())
             self.assertEqual(set(bundle.namelist()), {"libksud.so", "native-build-info.json", "README.txt"})
             internal = json.loads(bundle.read("native-build-info.json"))
+            self.assertEqual(internal["signing"], external["signing"])
             self.assertEqual(set(internal["artifacts"]), {"libksud.so"})
             self.assertEqual(internal["artifacts"]["libksud.so"], external["artifacts"]["libksud.so"])
             self.assertEqual(bundle.read("libksud.so"), (dist / "libksud.so").read_bytes())

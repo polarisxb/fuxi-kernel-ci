@@ -10,21 +10,32 @@ import subprocess
 import sys
 import tempfile
 from urllib.parse import quote, urlsplit
-from urllib.request import Request, urlopen
 
 sys.dont_write_bytecode = True
 import source
 
 Q = source.Q
+JSON_LIMIT = 16 * 1024 * 1024
 
 
 def branch_head(info):
     ref = "refs/heads/" + info["branch"]
-    with tempfile.TemporaryDirectory() as cwd:
-        output = subprocess.check_output(
-            ["git", "-c", "credential.helper=", "-c", "http.extraHeader=", "ls-remote",
-             "--exit-code", "--refs", info["url"], ref], cwd=cwd, text=True, timeout=90,
-            env=dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never"))
+    command = ["git", "-c", "credential.helper=", "-c", "http.extraHeader=", "ls-remote",
+               "--exit-code", "--refs", info["url"], ref]
+    environment = dict(os.environ, GIT_TERMINAL_PROMPT="0", GCM_INTERACTIVE="never")
+    for delay in (*source.RETRY_DELAYS, None):
+        try:
+            with tempfile.TemporaryDirectory() as cwd:
+                output = subprocess.check_output(command, cwd=cwd, text=True, timeout=90, env=environment)
+            break
+        except subprocess.CalledProcessError as error:
+            # --exit-code returns 2 when the branch is gone; only transport failures are retried.
+            if error.returncode == 2 or delay is None:
+                raise
+        except subprocess.TimeoutExpired:
+            if delay is None:
+                raise
+        source.sleep(delay)
     sha, actual = output.strip().split()
     if actual != ref or not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError(f"Unexpected ls-remote result for {ref}")
@@ -32,8 +43,10 @@ def branch_head(info):
 
 
 def public_json(url):
-    with urlopen(Request(url, headers={"User-Agent": "fuxi-upstream-watch"}), timeout=60) as response:
-        return json.load(response)
+    data = source.read_url(url, "fuxi-upstream-watch", JSON_LIMIT + 1)
+    if len(data) > JSON_LIMIT:
+        raise ValueError(f"Response exceeds {JSON_LIMIT} bytes: {url}")
+    return json.loads(data)
 
 
 def compare(info, head):

@@ -2,6 +2,7 @@
 import io
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -152,3 +153,30 @@ class WatchTests(unittest.TestCase):
         report, = (self.root / "out").iterdir()
         self.assertIn(b"## manager", report.read_bytes())
         self.assertEqual(before, (self.root / "ci-layout.json").read_bytes())
+
+
+class TransportRetryTests(unittest.TestCase):
+    INFO = {"url": "https://example.invalid/repo.git", "branch": "main"}
+
+    def test_branch_head_retries_transport_failures_but_not_a_missing_branch(self):
+        line = NEW + "\trefs/heads/main\n"
+        answers = [subprocess.CalledProcessError(128, ["git"]), subprocess.TimeoutExpired(["git"], 90), line]
+        with patch.object(W.subprocess, "check_output", side_effect=answers) as run, \
+                patch.object(W.source, "sleep") as pause:
+            self.assertEqual(W.branch_head(self.INFO), NEW)
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual([call.args[0] for call in pause.call_args_list], list(W.source.RETRY_DELAYS))
+        with patch.object(W.subprocess, "check_output", side_effect=subprocess.CalledProcessError(2, ["git"])) as run, \
+                patch.object(W.source, "sleep") as pause:
+            with self.assertRaises(subprocess.CalledProcessError):
+                W.branch_head(self.INFO)
+        self.assertEqual(run.call_count, 1)
+        pause.assert_not_called()
+
+    def test_public_json_uses_the_retrying_reader_with_a_size_limit(self):
+        with patch.object(W.source, "read_url", return_value=b'{"ahead_by": 4}') as reader:
+            self.assertEqual(W.public_json("https://api.github.com/x"), {"ahead_by": 4})
+        self.assertEqual(reader.call_args.args, ("https://api.github.com/x", "fuxi-upstream-watch", W.JSON_LIMIT + 1))
+        with patch.object(W.source, "read_url", return_value=b" " * (W.JSON_LIMIT + 1)):
+            with self.assertRaisesRegex(ValueError, "exceeds"):
+                W.public_json("https://api.github.com/x")

@@ -15,14 +15,14 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def fixture(root, commit, *, image=b"kernel image", source=b"common", module=b"module",
+def fixture(root, commit, *, image=b"kernel image", cert=b"cert", source=b"common", module=b"module",
             lib=b"native executable", native_tree=None, native_extra=None, signing=None):
     origin = {"repository": "fixture/repo", "source_sha": commit, "run_id": commit[:4]}
     if signing is not None:
         origin["signing"] = signing
     kernel = dict(origin, component="kernel", driver_version=1, manager_version=1,
                   susfs_version="v1", kernel_release="fixture", image_sha256=sha(image),
-                  public_certificate_sha256=sha(b"cert"), source_identity={
+                  public_certificate_sha256=sha(cert), source_identity={
                       "common.diff": sha(source), "SukiSU.diff": sha(b"driver"),
                       "integrated-source-manifest.json": sha(b"manifest")})
     tree = native_tree or {"Cargo.lock": {"type": "file", "sha256": sha(b"lock"), "executable": False}}
@@ -82,8 +82,79 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(self.compare().returncode, 0)
         fixture(self.new, "b" * 40, signing="ephemeral")
         result = self.compare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(set(json.loads(result.stdout)["signing_only"]), {"kernel/signing", "native/signing"})
+
+    def signed_fixture(self, root, commit, signing, marker, problem=None):
+        cert = b"\x30\x82\x01\x00" + marker * 256
+        note = bytes.fromhex("040000001400000003000000474e5500")
+        vdso = note + b"x" * 20 + note + b"y" * 20
+        image = b"kernel" + cert + vdso + note + marker * 20
+        if problem == "code":
+            image = b"Kernel" + image[6:]
+        elif problem == "missing cert":
+            image = image.replace(cert, bytes(len(cert)))
+        elif problem == "duplicate cert":
+            image += cert
+        elif problem == "missing note":
+            image = image.replace(note, bytes(len(note)))
+        elif problem == "extra note":
+            image += note + marker * 20
+        elif problem == "moved note":
+            image = b"kernel" + cert + vdso + b"\0" + note + marker * 20
+        elif problem == "truncated note":
+            image = image[:-1]
+        fixture(root, commit, signing=signing, image=image, cert=cert)
+        return sha(cert)
+
+    def test_temporary_signatures_are_classified_for_both_build_orders(self):
+        for left, right in ((None, "ephemeral"), ("ephemeral", "release"), ("ephemeral", "ephemeral")):
+            with self.subTest(left=left, right=right):
+                a = self.signed_fixture(self.old, "a" * 40, left, b"a")
+                b = self.signed_fixture(self.new, "b" * 40, right, b"b")
+                result = self.compare()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertTrue(report["passed"])
+                self.assertEqual(report["differences"], {})
+                only = report["signing_only"]
+                keys = {"kernel/kernel.zip/Image", "kernel/image_sha256", "kernel/public_certificate_sha256"}
+                if left != right:
+                    keys.update(("kernel/signing", "native/signing"))
+                self.assertEqual(set(only), keys)
+                self.assertEqual(only["kernel/public_certificate_sha256"], {"baseline": a, "candidate": b})
+                self.assertEqual(only["kernel/kernel.zip/Image"]["build_id"],
+                                 [{"note_offset": hex(6 + 260 + 2 * 36),
+                                   "baseline": (b"a" * 20).hex(), "candidate": (b"b" * 20).hex()}])
+
+    def test_release_certificate_change_stays_a_difference(self):
+        self.signed_fixture(self.old, "a" * 40, None, b"a")
+        self.signed_fixture(self.new, "b" * 40, "release", b"b")
+        result = self.compare()
         self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertEqual(set(json.loads(result.stdout)["differences"]), {"kernel/signing", "native/signing"})
+        report = json.loads(result.stdout)
+        self.assertEqual(report["signing_only"], {})
+        self.assertEqual(set(report["differences"]), {
+            "kernel/kernel.zip/Image", "kernel/image_sha256", "kernel/public_certificate_sha256"})
+
+    def test_one_byte_outside_signing_regions_fails(self):
+        self.signed_fixture(self.old, "a" * 40, "ephemeral", b"a")
+        self.signed_fixture(self.new, "b" * 40, "ephemeral", b"b", "code")
+        result = self.compare()
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertFalse(report["passed"])
+        self.assertEqual(report["signing_only"], {})
+        self.assertIn("kernel/kernel.zip/Image", report["differences"])
+
+    def test_certificate_must_be_unique_and_notes_must_be_complete_and_aligned(self):
+        self.signed_fixture(self.old, "a" * 40, "ephemeral", b"a")
+        for problem in ("missing cert", "duplicate cert", "missing note", "extra note", "moved note", "truncated note"):
+            with self.subTest(problem=problem):
+                self.signed_fixture(self.new, "b" * 40, "ephemeral", b"b", problem)
+                result = self.compare()
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertRegex(result.stderr, "certificate|build ID")
 
     def test_reordered_native_library_from_identical_inputs_is_reported_not_failed(self):
         fixture(self.new, "b" * 40, lib=b"native executable, constants reordered")

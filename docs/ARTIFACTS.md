@@ -51,6 +51,16 @@ CI 验收证明源码、工具链、保护配置与产物绑定；它不替代�
 `kernel-check`，在 runner 临时目录中生成一次性证书，核对实际编入内核的证书并验证模块签名。
 `ephemeral` 产物仅供检查，请勿刷机。发布任务要求两个组件均标记为 `release`。
 
-切换工作流前，由所有者创建 `release-signing` 环境，部署分支只允许 `main`，在环境中配置与基线证书
-配对的 `KERNEL_SIGNING_KEY_PEM`。确认环境配置正确后再移除仓库级同名 secret；应与工作流合并协调操作，
-以免仍使用旧配置的 main 构建取不到密钥。私钥只留在环境 secret 和 runner 临时文件中。
+## 比较构建产物
+
+`scripts/compare-builds.py` 先核对 ZIP、原始 Image 与各自构建记录的哈希。两次运行的证书不同且至少一次为
+`ephemeral` 时，比较器在各自的 Image 中按证书 SHA256 定位唯一的 DER 证书，再定位所有 GNU build ID 注释。
+每个 Image 至少要有一处注释，两边的注释偏移必须逐项相同。比较器把证书和每处注释的 20 字节 ID 归零，
+然后逐字节比较，包括 vDSO 的其余内容。只有证书位置、长度及归零后的 Image 均相同，Image 内容差异才归入
+`signing_only`。报告保留原始哈希，只列出发生变化的 ID 及其注释头偏移。ZIP 条目的权限仍独立比较。
+
+两次 `release` 构建按原始 Image 和证书严格比较。退出码 0 表示 `differences` 为空，1 表示仍有差异，
+2 表示产物无效、证书无法唯一定位，或 build ID 注释缺失、截断、重叠或位置不一致。
+
+所有者目前没有原私钥文件，本阶段正式签名继续使用仓库级 secret。阶段 5 发布 r4 时将换用新私钥，
+仅保存在只允许 `main` 部署的 `release-signing` 环境中，随后删除旧的仓库级 secret。

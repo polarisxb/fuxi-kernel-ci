@@ -105,14 +105,16 @@ def sha256_bytes(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def _run_apply(root, patch, options):
+    root = Path(root)
+    command = [*GIT, "apply", "--whitespace=nowarn", *options, "-"]
+    environment = dict(os.environ, GIT_CEILING_DIRECTORIES=str(root.resolve().parent))
+    return subprocess.run(command, cwd=root, input=patch, capture_output=True, env=environment)
+
+
 def git_apply(root, patch, label, include=None):
     """Apply one patch exactly inside root; never search an enclosing repository."""
-    root = Path(root)
-    command = [*GIT, "apply", "--whitespace=nowarn"]
-    command += [f"--include={path}" for path in include or ()]
-    command.append("-")
-    environment = dict(os.environ, GIT_CEILING_DIRECTORIES=str(root.resolve().parent))
-    result = subprocess.run(command, cwd=root, input=patch, capture_output=True, env=environment)
+    result = _run_apply(root, patch, [f"--include={path}" for path in include or ()])
     if result.returncode:
         raise ValueError(f"{label} does not apply: " + result.stderr.decode(errors="replace").strip())
 
@@ -130,6 +132,31 @@ def apply_series(root, directory, include=None, upto=None):
         if selected is not None and not selected.intersection(touched):
             continue
         git_apply(root, data, path.name, include=sorted(selected) if selected is not None else None)
+    return records
+
+
+def check_series(root, directory):
+    """Try the queue on a disposable tree, advancing only past applicable patches."""
+    records, conflicts = [], {}
+    for path in read_series(directory):
+        data = path.read_bytes()
+        header, diff = split_patch(data.decode("utf-8"))
+        check_header(header, path.name)
+        touched = set(patch_paths(diff))
+        record = {"name": path.name}
+        earlier = [name for name, files in conflicts.items() if touched & files]
+        if earlier:
+            record["after_conflict_in"] = earlier
+        forward = _run_apply(root, data, ["--check"])
+        if forward.returncode == 0:
+            git_apply(root, data, path.name)
+            record["status"] = "applies"
+        elif _run_apply(root, data, ["--reverse", "--check"]).returncode == 0:
+            record["status"] = "already-upstream"
+        else:
+            record.update(status="conflict", error=forward.stderr.decode(errors="replace").strip())
+            conflicts[path.name] = touched
+        records.append(record)
     return records
 
 

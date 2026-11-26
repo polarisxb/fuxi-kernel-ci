@@ -54,6 +54,31 @@ class PatchQueueTests(unittest.TestCase):
         self.assertEqual([record["name"] for record in records], ["0001-first.patch", "0002-second.patch"])
         self.assertEqual(records[0]["sha256"], Q.sha256_bytes((self.queue / "0001-first.patch").read_bytes()))
 
+    def test_check_series_advances_the_tree_and_leaves_upstream_changes_intact(self):
+        write(self.tree / "a.c", "two\n")
+        self.write_queue({"0001-upstream.patch": patch_text("upstream", one_line_diff("a.c", "one", "two")),
+                          "0002-next.patch": patch_text("next", one_line_diff("a.c", "two", "three"))})
+        self.assertEqual(Q.check_series(self.tree, self.queue), [
+            {"name": "0001-upstream.patch", "status": "already-upstream"},
+            {"name": "0002-next.patch", "status": "applies"}])
+        self.assertEqual((self.tree / "a.c").read_bytes(), b"three\n")
+
+    def test_check_series_continues_and_names_only_overlapping_earlier_conflicts(self):
+        write(self.tree / "a", "new head\n")
+        write(self.tree / "b", "other\n")
+        self.write_queue({"0001-first.patch": patch_text("first", one_line_diff("a", "one", "two")),
+                          "0002-second.patch": patch_text("second", one_line_diff("a", "two", "three")),
+                          "0003-other.patch": patch_text("other", one_line_diff("b", "other", "changed")),
+                          "0004-last.patch": patch_text("last", one_line_diff("a", "new head", "last"))})
+        first, second, other, last = Q.check_series(self.tree, self.queue)
+        self.assertEqual(first["status"], "conflict")
+        self.assertIn("a", first["error"])
+        self.assertNotIn("after_conflict_in", first)
+        self.assertEqual(second["after_conflict_in"], [first["name"]])
+        self.assertEqual(other, {"name": "0003-other.patch", "status": "applies"})
+        self.assertEqual(last["after_conflict_in"], [first["name"], second["name"]])
+        self.assertEqual((self.tree / "a").read_bytes(), b"last\n")
+
     def test_series_must_list_every_existing_patch_exactly_once(self):
         first = patch_text("first", one_line_diff("a.c", "one", "two"))
         for patches, series, message in (

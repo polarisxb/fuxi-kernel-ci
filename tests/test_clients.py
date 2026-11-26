@@ -10,12 +10,13 @@ from pathlib import Path
 import re
 import subprocess
 import shutil
+import ssl
 import sys
 import tempfile
 import textwrap
 import unittest
 from unittest.mock import patch
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -359,6 +360,22 @@ class SourceTests(unittest.TestCase):
         self.assertIn("https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/" + "b" * 40 + "/kernel/missing.c", calls)
         self.assertIn("https://gitlab.com/simonpunk/susfs4ksu/-/raw/" + "d" * 40 + "/kernel_patches/fs/susfs.c", calls)
 
+    def test_fetch_overrides_the_pin_at_every_endpoint(self):
+        self.fetch_patch.stop()
+        head = "1" * 40
+        with patch.object(S, "urlopen", return_value=io.BytesIO(b"head")) as transport:
+            self.assertEqual(S.fetch("driver", "kernel/test.c", commit=head), b"head")
+        self.assertIn(f"/{head}/kernel/test.c", transport.call_args.args[0].full_url)
+        layout = S.layout()
+        layout["upstreams"]["driver"]["backup_urls"] = ["https://github.com/backup/SukiSU-Ultra.git"]
+        with patch.object(S, "layout", return_value=layout):
+            for name in ("driver", "common", "susfs"):
+                endpoints = S.raw_urls(name, "a b.c", commit=head)
+                self.assertTrue(all(f"/{head}/a%20b.c" in url for url, _ in endpoints))
+            self.assertEqual(len(S.raw_urls("driver", "x", commit=head)), 2)
+            with self.assertRaisesRegex(ValueError, "commit SHA"):
+                S.fetch("driver", "x", commit="main")
+
     def test_fetch_reads_a_backup_after_the_upstream_lost_the_file(self):
         self.fetch_patch.stop()
         layout = json.loads((self.root / "ci-layout.json").read_bytes())
@@ -374,6 +391,34 @@ class SourceTests(unittest.TestCase):
             self.assertEqual(S.fetch("driver", "kernel/ksu.c"), b"backup copy")
         self.assertEqual(calls, [f"https://raw.githubusercontent.com/{owner}/SukiSU-Ultra/{'b' * 40}/kernel/ksu.c"
                                  for owner in ("SukiSU-Ultra", "backup")])
+
+    def test_fetch_retries_dropped_connections_but_not_http_answers(self):
+        self.fetch_patch.stop()
+        answers = [URLError(ssl.SSLEOFError(8, "EOF occurred in violation of protocol")),
+                   HTTPError("u", 503, "unavailable", {}, None), io.BytesIO(b"third attempt")]
+        def flaky(request, timeout):
+            answer = answers.pop(0)
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+        with patch.object(S, "urlopen", flaky), patch.object(S, "sleep") as pause:
+            self.assertEqual(S.fetch("susfs", "kernel_patches/fs/susfs.c"), b"third attempt")
+        self.assertEqual([call.args[0] for call in pause.call_args_list], list(S.RETRY_DELAYS))
+        with patch.object(S, "urlopen", side_effect=URLError("offline")) as transport, patch.object(S, "sleep"):
+            with self.assertRaises(URLError):
+                S.fetch("susfs", "kernel_patches/fs/susfs.c")
+        self.assertEqual(transport.call_count, len(S.RETRY_DELAYS) + 1)
+        for code in (403, 404):
+            with self.subTest(code=code):
+                answer = HTTPError("u", code, "final", {}, None)
+                with patch.object(S, "urlopen", side_effect=answer) as transport, patch.object(S, "sleep") as pause:
+                    if code == 404:
+                        self.assertIsNone(S.fetch("susfs", "kernel_patches/fs/missing.c"))
+                    else:
+                        with self.assertRaises(HTTPError):
+                            S.fetch("susfs", "kernel_patches/fs/susfs.c")
+                self.assertEqual(transport.call_count, 1)
+                pause.assert_not_called()
 
 
 class ReleaseCollectionTests(unittest.TestCase):

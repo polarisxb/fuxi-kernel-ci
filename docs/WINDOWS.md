@@ -22,6 +22,20 @@ git config core.autocrlf false
 CI 每次按"上游 → 官方 SUSFS 补丁 → 补丁队列"现场组装完整源码。上游更新时
 只需要改 pin，再看哪个补丁打不上；不需要重新导入整棵源码树。
 
+## 检查上游更新
+
+在仓库根目录用 PowerShell 运行以下命令。连接公共上游即可，无需登录 GitHub。
+
+```powershell
+python -B scripts/upstream_watch.py --dry-run
+```
+
+报告按队列列出补丁状态及冲突位置。网络连接中断、超时或服务器返回 5xx 时，每个请求最多尝试 3 次；
+仍然失败才停止并显示错误，可以稍后重新运行。若模块文件列表请求失败，报告会标出尚未检查的排除规则和权限；
+其余可读取文件仍参与补丁检查。要保存 UTF-8 原文，可运行
+`python -B scripts/upstream_watch.py --write .work/upstream-reports`，再按 UTC 日期打开 Markdown 文件。
+该命令向标准输出写入更新提交号的 JSON。
+
 ## 查看源码
 
 `read` 只下载需要的文件，输出 CI 实际编译的内容；`--upstream` 输出原始上游：

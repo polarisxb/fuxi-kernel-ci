@@ -14,6 +14,7 @@ kernel patch (for common) and then the queue in patches/<queue>/series.
 """
 import argparse
 import base64
+import http.client
 import importlib.util
 import json
 from pathlib import Path, PurePosixPath
@@ -24,6 +25,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+from time import sleep
 from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -72,10 +74,13 @@ def logical_path(value):
     return queue, Q.safe_relative(path)
 
 
-def raw_urls(name, path):
-    """Pinned raw-file URLs for one upstream, then its backups; only known hosts are contacted."""
+def raw_urls(name, path, *, commit=None):
+    """Raw-file URLs at one revision (default: the pin), then its backups."""
     info = layout()["upstreams"][name]
-    sha, encoded = info["commit"], quote(path, safe="/")
+    sha = info["commit"] if commit is None else commit
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise ValueError("Expected a full upstream commit SHA")
+    encoded = quote(path, safe="/")
     if name == "common":
         return [(f"https://raw.githubusercontent.com/aosp-mirror/kernel_common/{sha}/{encoded}", False),
                 (f"https://android.googlesource.com/kernel/common/+/{sha}/{encoded}?format=TEXT", True)]
@@ -90,12 +95,34 @@ def raw_urls(name, path):
     return urls
 
 
-def fetch(name, path):
-    """Return the pinned upstream file, or None when the commit does not have it."""
-    for url, encoded_body in raw_urls(name, path):
+# Seconds to wait before the second and third attempt of a public request.
+RETRY_DELAYS = (2, 5)
+
+
+def read_url(url, user_agent, limit):
+    """Read up to limit bytes from a public URL, retrying dropped connections and HTTP 5xx.
+
+    Any other HTTP answer (404 included) is final, so callers can still tell a missing
+    file from an unreachable host.
+    """
+    for delay in (*RETRY_DELAYS, None):
         try:
-            with urlopen(Request(url, headers={"User-Agent": "fuxi-kernel-ci-source"}), timeout=60) as response:
-                data = response.read(32 * 1024 * 1024 + 1)
+            with urlopen(Request(url, headers={"User-Agent": user_agent}), timeout=60) as response:
+                return response.read(limit)
+        except HTTPError as error:
+            if error.code < 500 or delay is None:
+                raise
+        except (OSError, http.client.HTTPException):
+            if delay is None:
+                raise
+        sleep(delay)
+
+
+def fetch(name, path, *, commit=None):
+    """Return the requested upstream file, or None when the commit does not have it."""
+    for url, encoded_body in raw_urls(name, path, commit=commit):
+        try:
+            data = read_url(url, "fuxi-kernel-ci-source", 32 * 1024 * 1024 + 1)
         except HTTPError as error:
             if error.code == 404:
                 continue
